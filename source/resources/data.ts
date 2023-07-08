@@ -283,5 +283,5 @@ export const ITEMS: Item[] = [
 
 // Miscellaneous Data
 export const BotInviteLink = `https://discord.com/api/oauth2/authorize?client_id=${process.env.CLIENT_ID}&permissions=0&scope=bot%20applications.commands`;
-export const SupportServer = `https://google.com`;
+export const SupportServer = `https://discord.gg/DuseEA4Ewh`;
 export const GitHubRepository = `https://github.com/Platformer444/Industroz`;
