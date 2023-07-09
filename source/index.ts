@@ -631,7 +631,7 @@ new CommandBuilder()
                     .setUrl(BotInviteLink),
                 new ButtonBuilder()
                     .setStyle("Link")
-                    .setLabel('Supoort Server')
+                    .setLabel('Support Server')
                     .setUrl(SupportServer),
                 new ButtonBuilder()
                     .setStyle("Link")
