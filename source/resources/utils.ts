@@ -386,9 +386,9 @@ export async function buildItemEmbed(userId: string, itemName: string) {
     })[0];
 
     const itemEmbed = new EmbedBuilder()
-        .setTitle(`${item.emoji}${item.itemName} (x${invItem.quantity})`)
+        .setTitle(`${item.emoji} ${item.itemName} (x${invItem.quantity})`)
         .setDescription(item.description)
-        .setFooter(item.sellable ? { text: `${item.emoji}x1 -> ${sellItem.emoji}x${item.sellGive.amount}` } : { text: 'Can\'t be sold' });
+        .setFooter(item.sellable ? { text: `${item.itemName} x1 -> ${sellItem.itemName} x${item.sellGive.amount}` } : { text: 'Can\'t be sold' });
 
     const sellButton = new ActionRowBuilder()
         .addComponents(

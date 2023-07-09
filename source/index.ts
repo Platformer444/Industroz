@@ -20,7 +20,7 @@ new EventBuilder()
         await registerCommands();
 
         client.user.setActivity('/world view', { type: ActivityType.Playing });
-        console.log(`Logged in as ${client.user.tag}`);
+        console.log(`Logged in as ${client.user.tag} at v${BotVersion}`);
     })
     .defineEvent();
 
@@ -593,7 +593,7 @@ new CommandBuilder()
                     return item.itemId === invItem.item;
                 })[0];
 
-                choices.push(`${item.emoji}${item.itemName} x${invItem.quantity}`);
+                choices.push(`${item.itemName} x${invItem.quantity}`);
             });
 		}
 
@@ -605,7 +605,7 @@ new CommandBuilder()
     .setExecute(async function execute(interaction) {
         const item = interaction.options.getString('item');
 
-        if (item !== null) await interaction.reply(await buildItemEmbed(interaction.user.id, ITEMS.filter((itemFilter) => { return item.includes(itemFilter.itemName) })[0].itemName.toLowerCase().replace(' ', '_')));
+        if (item !== null) await interaction.reply(await buildItemEmbed(interaction.user.id, ITEMS.filter((itemFilter) => { return itemFilter.itemName === item.split('x')[0].trim() })[0].itemName.toLowerCase().replace(' ', '_')));
         else await interaction.reply(await buildInventoryEmbed(interaction.user.id, interaction.user.username));
     })
     .defineCommand();

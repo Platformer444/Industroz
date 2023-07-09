@@ -159,11 +159,11 @@ export const TILES: Tile[] = [
         component: 2,
         emoji: '<:Land1111WoodcutterHut:1109051386257211392>',
         canBuiltOn: 12,
-        destroyReplace: 2,
+        destroyReplace: 12,
         destroyGive: [
             {
                 item: 1,
-                amount: 90
+                amount: 9
             }
         ]
     },
@@ -188,11 +188,26 @@ export const TILES: Tile[] = [
         component: 4,
         emoji: '<:Land1111StoneDriller:1123626371831320708>',
         canBuiltOn: 14,
+        destroyReplace: 14,
+        destroyGive: [
+            {
+                item: 1,
+                amount: 13
+            }
+        ]
+    },
+    {
+        tileId: 16,
+        tileName: 'WoodCutter',
+        connections: [1, 1, 1, 1],
+        component: 5,
+        emoji: '<:WoodCutter:1127542830215204945>',
+        canBuiltOn: 2,
         destroyReplace: 2,
         destroyGive: [
             {
                 item: 1,
-                amount: 135
+                amount: 9
             }
         ]
     }
@@ -213,7 +228,11 @@ export const COMPONENTS: Component[] = [
         buyingDetails: [
             {
                 item: 1,
-                amount: 100
+                amount: 10
+            },
+            {
+                item: 2,
+                amount: 5
             }
         ],
         production: [
@@ -237,12 +256,38 @@ export const COMPONENTS: Component[] = [
         buyingDetails: [
             {
                 item: 1,
-                amount: 150
+                amount: 15
+            },
+            {
+                item: 3,
+                amount: 5
             }
         ],
         production: [
             {
                 item: 3,
+                amount: 1
+            }
+        ]
+    },
+    {
+        componentId: 5,
+        componentName: 'Wood Cutter',
+        spawnable: false,
+        buildable: true,
+        buyingDetails: [
+            {
+                item: 1,
+                amount: 10
+            },
+            {
+                item: 2,
+                amount: 3
+            }
+        ],
+        production: [
+            {
+                item: 4,
                 amount: 1
             }
         ]
@@ -277,6 +322,17 @@ export const ITEMS: Item[] = [
         sellGive: {
             item: 1,
             amount: 3
+        }
+    },
+    {
+        itemId: 4,
+        itemName: 'Wooden Plank',
+        emoji: '<:WoodenPlanks:1127539636718293134>',
+        description: 'A Cuboidal Piece of Usable Material made by cutting and poilishing Wood cut from forests.',
+        sellable: true,
+        sellGive: {
+            item: 1,
+            amount: 2
         }
     }
 ];
