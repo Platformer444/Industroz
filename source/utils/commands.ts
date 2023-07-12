@@ -41,22 +41,20 @@ const commands: Command[] = [];
 const commandsData: Command["data"][] = [];
 
 function defineCommand(command: Command) {
-    let done = false;
+    let exists = false;
 
     commands.forEach((commandLoop) => {
         if (commandLoop["data"]["name"] === command["data"]["name"]) {
-            commands.splice(commands.indexOf(commandLoop), 0, command);
-            commandsData.splice(commandsData.indexOf(commandLoop["data"]), 0, command["data"]);
-            done = true;
+            commands.splice(commands.indexOf(commandLoop), 1);
+            commandsData.splice(commandsData.indexOf(commandLoop["data"]), 1)
+            exists = true;
+            return;
         }
     });
+    commands.push(command);
+    commandsData.push(command["data"])
 
-    if (!done) {
-        commands.push(command);
-        commandsData.push(command["data"]);
-    }
-
-    console.log(`\t${command["data"]["name"]} ${done ? 'redefined': 'defined'}!\n`);
+    if (!exists) console.log(`\t${command["data"]["name"]} defined!\n`);
     return command;
 };
 export function getCommands() : [Command[], Command["data"][]] { return [commands, commandsData]; };
@@ -129,17 +127,15 @@ export class CommandBuilder {
         execute: undefined
     };
 
-    setName(name: string): this { this.command["data"]["name"] = name; return this; };
+    setName(name: string): this { this.command["data"]["name"] = name; defineCommand(this.command); return this; };
 
-    setDescription(description: string): this { this.command["data"]["description"] = description; return this; };
+    setDescription(description: string): this { this.command["data"]["description"] = description; defineCommand(this.command); return this; };
 
-    addSubCommand(subCommand: SubCommandBuilder): this { this.command["data"]["options"].push(subCommand["subCommand"]); return this; };
+    addSubCommand(subCommand: SubCommandBuilder): this { this.command["data"]["options"].push(subCommand["subCommand"]); defineCommand(this.command); return this; };
     
-    addOption(option: OptionBuilder): this { this.command["data"]["options"].push(option["option"]); return this; };
+    addOption(option: OptionBuilder): this { this.command["data"]["options"].push(option["option"]); defineCommand(this.command); return this; };
 
-    setAutocomplete(autocomplete: Command["autocomplete"]): this { this.command["autocomplete"] = autocomplete; return this; };
+    setAutocomplete(autocomplete: Command["autocomplete"]): this { this.command["autocomplete"] = autocomplete; defineCommand(this.command); return this; };
 
-    setExecute(execute: Command["execute"]): this { this.command["execute"] = execute; return this; };
-    
-    defineCommand(): this { defineCommand(this.command); return this; };
+    setExecute(execute: Command["execute"]): this { this.command["execute"] = execute; defineCommand(this.command); return this; };
 }

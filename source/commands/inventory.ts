@@ -42,6 +42,5 @@ export default function inventory() {
 
         if (item !== null) await interaction.reply(await buildItemEmbed(interaction.user.id, ITEMS.filter((itemFilter) => { return itemFilter.itemName === item.split('x')[0].trim() })[0].itemName.toLowerCase().replace(' ', '_')));
         else await interaction.reply(await buildInventoryEmbed(interaction.user.id, interaction.user.username));
-    })
-    .defineCommand();
+    });
 }

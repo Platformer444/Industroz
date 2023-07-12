@@ -451,6 +451,5 @@ export default function interactionCreate() {
                 ephemeral: true
             });
         }
-    })
-    .defineEvent();
+    });
 }

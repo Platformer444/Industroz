@@ -37,6 +37,5 @@ export default function info() {
             components: [buttons["actionRow"]],
             embeds: [informationEmbed]
         });
-    })
-    .defineCommand();
+    });
 }

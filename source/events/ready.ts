@@ -12,6 +12,5 @@ export default function ready() {
 
         client.user.setActivity('/world view', { type: ActivityType.Playing });
         console.log(`Logged in as ${client.user.tag} at v${BotVersion}`);
-    })
-    .defineEvent();
+    });
 }

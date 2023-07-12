@@ -9,8 +9,18 @@ export interface Event {
 const events: Event[] = [];
 
 export function defineEvent(event: Event) {
+    let exists = false;
+
+    events.forEach((eventLoop) => {
+        if (eventLoop["name"] === event["name"]) {
+            events.splice(events.indexOf(eventLoop), 1);
+            exists = true;
+            return;
+        }
+    });
     events.push(event);
-    console.log(`\t${event["name"]} defined!\n`);
+
+    if (!exists) console.log(`\t${event["name"]} defined!\n`);
     return event;
 };
 export function getEvents() : Event[] { return events; };
@@ -22,11 +32,9 @@ export class EventBuilder {
         execute: undefined
     };
 
-    setName(name: keyof ClientEvents): this { this.event["name"] = name; return this; };
+    setName(name: keyof ClientEvents): this { this.event["name"] = name; defineEvent(this.event); return this; };
 
-    setOnce(once: boolean): this { this.event["once"] = once; return this };
+    setOnce(once: boolean): this { this.event["once"] = once; defineEvent(this.event); return this };
 
-    setExecute(execute: Event["execute"]): this { this.event["execute"] = execute; return this; };
-
-    defineEvent(): this { defineEvent(this.event); return this };
+    setExecute(execute: Event["execute"]): this { this.event["execute"] = execute; defineEvent(this.event); return this; };
 };

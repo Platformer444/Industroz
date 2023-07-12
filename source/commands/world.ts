@@ -97,6 +97,5 @@ export default function world() {
 
             await interaction.reply(await buildHomeScreen(user, interaction.user.id, island));
         }
-    })
-    .defineCommand();
+    });
 }
