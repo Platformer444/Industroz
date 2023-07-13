@@ -241,6 +241,9 @@ export default function interactionCreate() {
                         const component = COMPONENTS.filter((component) => {
                             return component.componentId === worldComponent.component;
                         })[0];
+                        const tile = TILES.filter((tile) => {
+                            return tile.component === component.componentId;
+                        })[0];
 
                         component.production.forEach((productionItem) => {
                             const item = ITEMS.filter((item) => {
@@ -252,10 +255,36 @@ export default function interactionCreate() {
 
                             inventory = editInventory(item, "Add", production, inventory);
 
-                            message += `> ${item.emoji} x${production}\n`
-
-                            worldComponent.lastTime = Date.now();
+                            message += `> From ${tile.emoji} at ${JSON.stringify(worldComponent.location)}: ${item.emoji} x${production}\n`;
                         });
+
+                        if (component.consumption !== undefined) {
+                            component.consumption.forEach((consumptionItem) => {
+                                const item = ITEMS.filter((item) => {
+                                    return item.itemId === consumptionItem.item;
+                                })[0];
+
+                                const timeElapsed = Math.ceil((Date.now() - worldComponent.lastTime) / 1000);
+                                const consumption = ((consumptionItem.amount * worldComponent.level) + (worldComponent.level - 1)) * timeElapsed
+
+                                const newInv = editInventory(item, "Remove", consumption, inventory);
+
+                                if (newInv === undefined) {
+                                    const invItem = inventory.filter((invItem) => {
+                                        return invItem.item === item.itemId;
+                                    })[0];
+
+                                    inventory = editInventory(item, "Remove", invItem.quantity, inventory);
+
+                                    message += `> From ${tile.emoji} at ${JSON.stringify(worldComponent.location)}:  ${item.emoji} -${invItem.quantity}\n`;
+                                } else {
+                                    inventory = newInv
+                                    message += `> From ${tile.emoji} at ${JSON.stringify(worldComponent.location)}:  ${item.emoji} -${consumption}\n`;
+                                };
+                            });
+                        }
+
+                        worldComponent.lastTime = Date.now();
                     });
 
                     if (message === 'You Got:\n') message += '> Nothing';

@@ -1,9 +1,9 @@
-import { Client, GatewayIntentBits } from "discord.js";
-import "dotenv/config";
-import { getEvents } from "./utils/events.js";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "url"
+import { Client, GatewayIntentBits } from "discord.js";
+import { getEvents } from "./utils/events.js";
+import "dotenv/config";
 
 const client = new Client<true>({
     intents: [GatewayIntentBits.Guilds]

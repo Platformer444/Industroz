@@ -56,6 +56,10 @@ export interface Component {
     production?: {
         item: number,
         amount: number
+    }[] | undefined,
+    consumption?: {
+        item: number,
+        amount: number
     }[] | undefined
 };
 
@@ -289,6 +293,12 @@ export const COMPONENTS: Component[] = [
             {
                 item: 4,
                 amount: 1
+            }
+        ],
+        consumption: [
+            {
+                item: 2,
+                amount: 2
             }
         ]
     }
