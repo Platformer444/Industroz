@@ -250,38 +250,35 @@ export default function interactionCreate() {
                             })[0];
 
                             const timeElapsed = Math.ceil((Date.now() - worldComponent.lastTime) / 1000);
-                            const production = ((productionItem.amount * worldComponent.level) + (worldComponent.level - 1)) * timeElapsed;
+                            let production = ((productionItem.amount * worldComponent.level) + (worldComponent.level - 1)) * timeElapsed;
+
+                            if (component.consumption !== undefined) {
+                                component.consumption.forEach((consumptionItem) => {
+                                    const item = ITEMS.filter((item) => {
+                                        return item.itemId === consumptionItem.item;
+                                    })[0];
+
+                                    let consumption = ((consumptionItem.amount * worldComponent.level) + (worldComponent.level - 1)) * timeElapsed;
+                                    const newInv = editInventory(item, "Remove", consumption, inventory);
+
+                                    if (newInv === undefined) {
+                                        consumption = inventory.filter((invItem) => { return invItem.item === item.itemId })[0].quantity
+                                        inventory = editInventory(
+                                            item,
+                                            "Remove",
+                                            consumption,
+                                            inventory
+                                        );
+                                    } else inventory = newInv;
+
+                                    message += `> From ${tile.emoji} at ${JSON.stringify(worldComponent.location)}: ${item.emoji} -${consumption}\n`
+                                });
+                            }
 
                             inventory = editInventory(item, "Add", production, inventory);
 
-                            message += `> From ${tile.emoji} at ${JSON.stringify(worldComponent.location)}: ${item.emoji} x${production}\n`;
+                            message += `> From ${tile.emoji} at ${JSON.stringify(worldComponent.location)}: ${item.emoji} +${production}\n`;
                         });
-
-                        if (component.consumption !== undefined) {
-                            component.consumption.forEach((consumptionItem) => {
-                                const item = ITEMS.filter((item) => {
-                                    return item.itemId === consumptionItem.item;
-                                })[0];
-
-                                const timeElapsed = Math.ceil((Date.now() - worldComponent.lastTime) / 1000);
-                                const consumption = ((consumptionItem.amount * worldComponent.level) + (worldComponent.level - 1)) * timeElapsed
-
-                                const newInv = editInventory(item, "Remove", consumption, inventory);
-
-                                if (newInv === undefined) {
-                                    const invItem = inventory.filter((invItem) => {
-                                        return invItem.item === item.itemId;
-                                    })[0];
-
-                                    inventory = editInventory(item, "Remove", invItem.quantity, inventory);
-
-                                    message += `> From ${tile.emoji} at ${JSON.stringify(worldComponent.location)}:  ${item.emoji} -${invItem.quantity}\n`;
-                                } else {
-                                    inventory = newInv
-                                    message += `> From ${tile.emoji} at ${JSON.stringify(worldComponent.location)}:  ${item.emoji} -${consumption}\n`;
-                                };
-                            });
-                        }
 
                         worldComponent.lastTime = Date.now();
                     });
