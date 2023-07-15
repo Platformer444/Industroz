@@ -74,7 +74,7 @@ export default function interactionCreate() {
                     });
 
                     await interaction.update({
-                        content: (data.worldExists ? 'Your Industrial World was successfully resetted' : 'Your New Industrial World was successfully created') + '\nView Your Industrial World by </world view:1118465851834765442>',
+                        content: (data.worldExists ? 'Your Industrial World was successfully resetted' : 'Your New Industrial World was successfully created') + '\nView Your Industrial World with </world view:1128692158388514860>',
                         components: [],
                         ephemeral: data.visibility === 'Private'
                     });
@@ -83,7 +83,6 @@ export default function interactionCreate() {
                     const data = JSON.parse(interaction.customId.split('$')[1]);
 
                     const worldJSON = await world.getWorld();
-                    const settingsJSON = await settings.getSettings();
 
                     const worldArray = worldJSON["worldArray"][data["islandNum"] - 1]["islandArray"];
 
