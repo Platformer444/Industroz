@@ -17,6 +17,7 @@ export interface World {
         component: number,
         level: number,
         location: [number, number],
+        islandNum: number,
         lastTime: number
     }[],
     inventory: Inventory[]

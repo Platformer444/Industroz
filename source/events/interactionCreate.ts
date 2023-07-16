@@ -1,4 +1,4 @@
-import { ComponentType } from "discord.js";
+import { ComponentType, EmbedBuilder } from "discord.js";
 import { WorldClass, SettingsClass } from "../database.js";
 import { TILES, COMPONENTS, ITEMS, SETTINGS } from "../resources/data.js";
 import { createWorld, buildNavigationButtons, buildHomeScreen, navigate, editInventory, renderWorld, buildInventoryEmbed, buildItemEmbed } from "../resources/utils.js";
@@ -51,8 +51,8 @@ export default function interactionCreate() {
             }
             return;
         }
-        
-        if (interaction.user.id === interaction.message.interaction.user.id) {
+
+        if (interaction.user.id === interaction.member.user.id) {
             if (interaction.isButton()) {
                 const world = new WorldClass(interaction.user.id);
                 const settings = new SettingsClass(interaction.user.id);
@@ -128,7 +128,7 @@ export default function interactionCreate() {
                                                 return item.itemId === buyingDetail.item;
                                             })[0];
 
-                                            description += `${item.emoji}${buyingDetail.amount} `;
+                                            description += `${item.emoji} ${buyingDetail.amount} `;
                                         });
 
                                         return { label: buildable.componentName, value: buildable.componentName.toLowerCase().replace(' ', '_'), description: description, emoji: emoji };
@@ -184,6 +184,7 @@ export default function interactionCreate() {
                     }
 
                     worldArray[data["i"]][data["j"]] = selectedTile.destroyReplace;
+                    data["selectedTile"] = selectedTile.destroyReplace;
 
                     await world.saveWorld(worldJSON);
 
@@ -221,7 +222,7 @@ export default function interactionCreate() {
         
                     if (done) {
                         worldArray[data["i"]][data["j"]] = data["selectedTile"];
-                        worldJSON["components"].push({ component: buildable.componentId, level: 1, location: [data["i"], data["j"]], lastTime: Date.now() });
+                        worldJSON["components"].push({ component: buildable.componentId, level: 1, location: [data["i"], data["j"]], islandNum: data["island"], lastTime: Date.now() });
                         await world.saveWorld(worldJSON);
                         await interaction.update(await buildHomeScreen(interaction.user.id, interaction.user.id, data["island"]));
                         return;
@@ -249,7 +250,7 @@ export default function interactionCreate() {
                                 return item.itemId === productionItem.item;
                             })[0];
 
-                            const timeElapsed = Math.ceil((Date.now() - worldComponent.lastTime) / 1000);
+                            const timeElapsed = Math.floor((Date.now() - worldComponent.lastTime) / 60000);
                             let production = ((productionItem.amount * worldComponent.level) + (worldComponent.level - 1)) * timeElapsed;
 
                             if (component.consumption !== undefined) {
@@ -299,7 +300,7 @@ export default function interactionCreate() {
 
                     const sellModal = new ModalBuilder()
                         .setCustomid(`__sellModal$${item.itemId}`)
-                        .setTitle(`Sell ${item.emoji}${item.itemName}`)
+                        .setTitle(`Sell ${item.itemName}`)
                         .addComponents(
                             new ActionRowBuilder()
                                 .addComponents(
@@ -320,7 +321,7 @@ export default function interactionCreate() {
                     const worldJSON = await world.getWorld()
                     let inventory = worldJSON["inventory"];
                     const worldComponents = worldJSON["components"];
-                    const worldComponent = worldComponents.filter((worldComponent) => { return worldComponent.location[0] === data["i"] && worldComponent.location[1] === data["j"] })[0];
+                    const worldComponent = worldComponents.filter((worldComponent) => { return (worldComponent.location[0] === data["i"] && worldComponent.location[1] === data["j"]) && data["island"] === worldComponent.islandNum })[0];
 
                     const component = COMPONENTS.filter((commponent) => { return commponent.componentId === worldComponent.component })[0];
 
@@ -345,8 +346,14 @@ export default function interactionCreate() {
                     if (done) {
                         worldComponent.level += 1;
                         await world.saveWorld(worldJSON);
-                        await interaction.reply(`Your ${component.componentName} was successfully Upgraded to Level ${worldComponent.level}!`);
-                    } else await interaction.reply(`You need more Materials to Upgrade Your ${component.componentName} to Level ${worldComponent.level + 1}!`);
+                        await interaction.reply({
+                            content: `Your ${component.componentName} was successfully Upgraded to Level ${worldComponent.level}!`,
+                            ephemeral: true
+                        });
+                    } else await interaction.reply({
+                        content: `You need more Materials to Upgrade Your ${component.componentName} to Level ${worldComponent.level + 1}!`,
+                        ephemeral: true
+                    });
                 }
                 else if (interaction.customId.includes('__setCentralLocation')) {
                     const data = JSON.parse(interaction.customId.split('$')[1]);
@@ -363,8 +370,62 @@ export default function interactionCreate() {
                 else if (interaction.customId.includes('__currentTilePreview')) {
                     const data = JSON.parse(interaction.customId.split('$')[1]);
 
+                    const worldJSON = await world.getWorld();
+
+                    const tile = TILES.filter((tile) => {
+                        return tile.tileId === data["selectedTile"]
+                    })[0];
+
+                    const component = COMPONENTS.filter((component) => {
+                        return component.componentId === (tile.component === undefined ? undefined : tile.component);
+                    })[0];
+
+                    const worldComponent = worldJSON["components"].filter((worldComponent) => {
+                        return (worldComponent.location[0] === data["i"] && worldComponent.location[1] === data["j"]) && data["island"] === worldComponent.islandNum
+                    })[0];
+
+                    const fields = [];
+
+                    if (worldComponent !== undefined) {
+                        let productionText = '';
+
+                        component.production.forEach((productionItem) => {
+                            const item = ITEMS.filter((item) => {
+                                return item.itemId === productionItem.item;
+                            })[0];
+
+                            productionText += `${item.emoji} ${((productionItem.amount * worldComponent.level) + (worldComponent.level - 1))}/min `;
+                        });
+
+                        fields.push({ name: 'Level', value: worldComponent.level.toString(), inline: true });
+                        fields.push({ name: 'Production', value: productionText });
+                    }
+                    
+                    if (component !== undefined) {
+                        if (component.buyingDetails !== undefined) {
+                            let costText = '';
+                            let upgradeCostText = '';
+
+                            component.buyingDetails.forEach((buyingDetail) => {
+                                const item = ITEMS.filter((item) => {
+                                    return item.itemId === buyingDetail.item;
+                                })[0];
+
+                                costText += `${item.emoji} ${buyingDetail.amount} `;
+                                upgradeCostText += `${item.emoji} ${Math.ceil(((worldComponent.level + 1) * buyingDetail.amount) + (0.5 * buyingDetail.amount))}`
+                            });
+
+                            fields.push({ name: 'Cost', value: costText, inline: true });
+                            fields.push({ name: 'Upgrade Cost', value: upgradeCostText });
+                        }
+                    }
+
+                    const embed = new EmbedBuilder()
+                        .setTitle(`${tile.emoji} ${tile.tileName}`)
+                        .addFields(...fields)
+
                     await interaction.reply({
-                        content: `You have ${TILES.filter((tile) => { return tile.tileId === data["selectedTile"] })[0].tileName} selected currently!`,
+                        embeds: [embed],
                         ephemeral: true
                     });
                 }

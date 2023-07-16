@@ -202,16 +202,30 @@ export const TILES: Tile[] = [
     },
     {
         tileId: 16,
-        tileName: 'WoodCutter',
+        tileName: 'PlankCutter',
         connections: [1, 1, 1, 1],
         component: 5,
-        emoji: '<:WoodCutter:1127542830215204945>',
+        emoji: '<:PlankCutter:1129707631066480670>',
         canBuiltOn: 2,
         destroyReplace: 2,
         destroyGive: [
             {
                 item: 1,
                 amount: 9
+            }
+        ]
+    },
+    {
+        tileId: 17,
+        tileName: 'Land1111Coal',
+        connections: [1, 1, 1, 1],
+        component: 6,
+        emoji: '<:Land1111Coal:1129720124425900093>',
+        destroyReplace: 2,
+        destroyGive: [
+            {
+                item: 5,
+                amount: 1
             }
         ]
     }
@@ -226,7 +240,7 @@ export const COMPONENTS: Component[] = [
     },
     {
         componentId: 2,
-        componentName: 'Woodcutter House',
+        componentName: 'Woodcutter Hut',
         spawnable: false,
         buildable: true,
         buyingDetails: [
@@ -276,7 +290,7 @@ export const COMPONENTS: Component[] = [
     },
     {
         componentId: 5,
-        componentName: 'Wood Cutter',
+        componentName: 'Plank Cutter',
         spawnable: false,
         buildable: true,
         buyingDetails: [
@@ -301,6 +315,12 @@ export const COMPONENTS: Component[] = [
                 amount: 2
             }
         ]
+    },
+    {
+        componentId: 6,
+        componentName: 'Coal',
+        spawnable: true,
+        buildable: false
     }
 ];
 
@@ -343,6 +363,17 @@ export const ITEMS: Item[] = [
         sellGive: {
             item: 1,
             amount: 2
+        }
+    },
+    {
+        itemId: 5,
+        itemName: 'Coal',
+        emoji: '<:Coal:1129713984271044678>',
+        description: 'A Rough Piece of Blackish, Not so Spherical Substance Obtained by the Miners of Mining Co.',
+        sellable: true,
+        sellGive: {
+            item: 1,
+            amount: 3
         }
     }
 ];
