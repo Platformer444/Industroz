@@ -330,7 +330,7 @@ export default function interactionCreate() {
                             return item.itemId === buyingDetail.item;
                         })[0];
 
-                        const cost = Math.ceil(((worldComponent.level + 1) * buyingDetail.amount) + (0.5 * buyingDetail.amount));
+                        const cost = Math.ceil(((worldComponent.level + 1) * buyingDetail.amount) + (2 * buyingDetail.amount));
 
                         const newInv = editInventory(item, "Remove", cost, inventory);
                         
@@ -397,7 +397,7 @@ export default function interactionCreate() {
                             productionText += `${item.emoji} ${((productionItem.amount * worldComponent.level) + (worldComponent.level - 1))}/min `;
                         });
 
-                        fields.push({ name: 'Level', value: worldComponent.level.toString(), inline: true });
+                        fields.push({ name: 'Level', value: worldComponent.level.toString() });
                         fields.push({ name: 'Production', value: productionText });
                     }
                     
@@ -412,10 +412,10 @@ export default function interactionCreate() {
                                 })[0];
 
                                 costText += `${item.emoji} ${buyingDetail.amount} `;
-                                upgradeCostText += `${item.emoji} ${Math.ceil(((worldComponent.level + 1) * buyingDetail.amount) + (0.5 * buyingDetail.amount))}`
+                                upgradeCostText += `${item.emoji} ${Math.ceil(((worldComponent.level + 1) * buyingDetail.amount) + (2 * buyingDetail.amount))}`
                             });
 
-                            fields.push({ name: 'Cost', value: costText, inline: true });
+                            fields.push({ name: 'Cost', value: costText });
                             fields.push({ name: 'Upgrade Cost', value: upgradeCostText });
                         }
                     }
