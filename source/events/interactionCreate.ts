@@ -287,7 +287,10 @@ export default function interactionCreate() {
                     if (message === 'You Got:\n') message += '> Nothing';
 
                     await world.saveWorld(worldJSON);
-                    await interaction.reply(message);
+                    await interaction.reply({
+                        content: message,
+                        ephemeral: true
+                    });
                 }
                 else if (interaction.customId.includes('__itemPageNavigate')) {
                     const page = Number(interaction.customId.split('$')[1]);
