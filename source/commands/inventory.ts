@@ -40,7 +40,16 @@ export default function inventory() {
     .setExecute(async function execute(interaction) {
         const item = interaction.options.getString('item');
 
-        if (item !== null) await interaction.reply(await buildItemEmbed(interaction.user.id, ITEMS.filter((itemFilter) => { return itemFilter.itemName === item.split('x')[0].trim() })[0].itemName.toLowerCase().replace(' ', '_')));
+        if (item !== null) {
+            const filteredItem = ITEMS.filter((itemFilter) => {
+                return itemFilter.itemName === item.split('x')[0].trim()
+            })[0];
+            if (filteredItem !== undefined) await interaction.reply(await buildItemEmbed(interaction.user.id, filteredItem.itemName.toLowerCase().replace(' ', '_')));
+            else await interaction.reply({
+                content: `There is no such Item as ${item} in your Inventory!`,
+                ephemeral: true
+            });
+        }
         else await interaction.reply(await buildInventoryEmbed(interaction.user.id, interaction.user.username));
     });
 }

@@ -1,9 +1,9 @@
-import { ClientEvents  } from "discord.js"
+import { ClientEvents, Interaction, Client } from "discord.js"
 
 export interface Event {
     name: keyof ClientEvents,
     once: boolean,
-    execute(...args): any
+    execute: (...args: any[]) => any
 };
 
 const events: Event[] = [];

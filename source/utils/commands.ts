@@ -1,11 +1,11 @@
 import { REST, Routes } from "discord.js";
 
-interface Choice {
+export interface Choice {
     name: string,
     value: string
 }
 
-interface Option {
+export interface Option {
     type: number,
     name: string,
     description: string,
@@ -15,17 +15,17 @@ interface Option {
     autocomplete?: boolean | undefined
 };
 
-interface Command {
+export interface Command {
     data: {        
         name: string,
         description: string,
         options: Option[]
     },
-    autocomplete?(...args): any,
-    execute(...args): any
+    autocomplete?: (...args: any[]) => any,
+    execute: (...args: any[]) => any
 };
 
-enum OptionTypes {
+export enum OptionTypes {
     String = 3,
     Integer = 4,
     Boolean = 5,
@@ -58,8 +58,14 @@ function defineCommand(command: Command) {
     return command;
 };
 export function getCommands() : [Command[], Command["data"][]] { return [commands, commandsData]; };
-export async function registerCommands() {
-    const rest: REST = new REST().setToken(process.env.BOT_TOKEN);
+
+/**
+ * Register the commands for the Discord Bot
+ * @param {string} botToken The Token of the Discord Bot
+ * @param {string} botClientId The Client ID of the Discord Bot
+ */
+export async function registerCommands(botToken: string, botClientId: string) {
+    const rest: REST = new REST().setToken(botToken);
     const commands: Command["data"][] = getCommands()[1];
 
     await (async () => {
@@ -67,7 +73,7 @@ export async function registerCommands() {
             console.log(`Started refreshing ${commands.length} application (/) commands.`);
     
             const data: any = await rest.put(
-                Routes.applicationCommands(process.env.CLIENT_ID),
+                Routes.applicationCommands(botClientId),
                 { body: commands },
             );
     

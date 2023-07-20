@@ -90,7 +90,6 @@ export async function buildHomeScreen(userId: string, interactor: string, island
     const settings = new SettingsClass(userId);
 
     const worldJSON = await world.getWorld();
-    const settingsJSON = await settings.getSettings();
 
     if (worldJSON === undefined) return {
         content: 'Looks like the specified User doesn\'t have an Industrial World yet...',
@@ -99,6 +98,11 @@ export async function buildHomeScreen(userId: string, interactor: string, island
 
     if ((await settings.getSettings())["worldVisibility"] === "Private" && userId !== interactor) return {
         content: 'Looks like the spcified User has a Private Industrial World',
+        ephemeral: true
+    };
+
+    if (worldJSON["worldArray"][islandNum - 1] === undefined) return {
+        content: 'The specified Island is Invalid!',
         ephemeral: true
     };
 
