@@ -26,7 +26,7 @@ export default function interactionCreate() {
             try {
                 if (command["node_env"] === "development" && interaction.user.id === BotAuthor) command.execute(interaction);
                 else await interaction.reply({
-                    content: 'You don\'t have the permissions to use the following command',
+                    content: 'You don\'t have the permission to use the following command',
                     ephemeral: true
                 });
             } catch (error) {
