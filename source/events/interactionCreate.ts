@@ -1,6 +1,6 @@
 import { ComponentType, EmbedBuilder } from "discord.js";
 import { WorldClass, SettingsClass } from "../database.js";
-import { TILES, COMPONENTS, ITEMS, SETTINGS } from "../resources/data.js";
+import { TILES, COMPONENTS, ITEMS, SETTINGS, BotAuthor } from "../resources/data.js";
 import { createWorld, buildNavigationButtons, buildHomeScreen, navigate, editInventory, renderWorld, buildInventoryEmbed, buildItemEmbed } from "../resources/utils.js";
 import { getCommands } from "../utils/commands.js";
 import { ActionRowBuilder, ButtonBuilder, ModalBuilder, SelectMenuBuilder, TextInputBuilder } from "../utils/components.js";
@@ -24,7 +24,11 @@ export default function interactionCreate() {
             }
 
             try {
-                command.execute(interaction);
+                if (command["node_env"] === "development" && interaction.user.id === BotAuthor) command.execute(interaction);
+                else await interaction.reply({
+                    content: 'You don\'t have the permissions to use the following command',
+                    ephemeral: true
+                });
             } catch (error) {
                 console.error(error);
                 if (interaction.replied || interaction.deferred) {
