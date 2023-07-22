@@ -24,11 +24,11 @@ export default function interactionCreate() {
             }
 
             try {
-                if (command["node_env"] === "development" && interaction.user.id === BotAuthor) command.execute(interaction);
-                else await interaction.reply({
+                if (command["node_env"] === "development" && interaction.user.id !== BotAuthor) await interaction.reply({
                     content: 'You don\'t have the permission to use the following command',
                     ephemeral: true
                 });
+                else command.execute(interaction);
             } catch (error) {
                 console.error(error);
                 if (interaction.replied || interaction.deferred) {
@@ -232,7 +232,10 @@ export default function interactionCreate() {
                         await interaction.update(await buildHomeScreen(interaction.user.id, interaction.user.id, data["island"]));
                         return;
                     } else {
-                        await interaction.reply('You don\'t have enough Items to Build that!');
+                        await interaction.reply({
+                            content: 'You don\'t have enough Items to Build that!',
+                            ephemeral: true
+                        });
                     }
                 }
                 else if (interaction.customId === '__getOfflineEarnings') {
@@ -256,7 +259,7 @@ export default function interactionCreate() {
                             })[0];
 
                             const timeElapsed = Math.floor((Date.now() - worldComponent.lastTime) / 60000);
-                            let production = ((productionItem.amount * worldComponent.level) + (worldComponent.level - 1)) * timeElapsed;
+                            let production = (((productionItem.amount * worldComponent.level) / 2) + (worldComponent.level - 1)) * timeElapsed;
 
                             if (component.consumption !== undefined) {
                                 component.consumption.forEach((consumptionItem) => {
@@ -264,7 +267,7 @@ export default function interactionCreate() {
                                         return item.itemId === consumptionItem.item;
                                     })[0];
 
-                                    let consumption = ((consumptionItem.amount * worldComponent.level) + (worldComponent.level - 1)) * timeElapsed;
+                                    let consumption = (((consumptionItem.amount * worldComponent.level) / 2) + (worldComponent.level - 1)) * timeElapsed;
                                     const newInv = editInventory(item, "Remove", consumption, inventory);
 
                                     if (newInv === undefined) {
@@ -330,6 +333,14 @@ export default function interactionCreate() {
                     let inventory = worldJSON["inventory"];
                     const worldComponents = worldJSON["components"];
                     const worldComponent = worldComponents.filter((worldComponent) => { return (worldComponent.location[0] === data["i"] && worldComponent.location[1] === data["j"]) && data["island"] === worldComponent.islandNum })[0];
+
+                    if (worldComponent === undefined) {
+                        await interaction.reply({
+                            content: 'The Tile you want to Upgrade is Invalid!',
+                            ephemeral: true
+                        });
+                        return;
+                    }
 
                     const component = COMPONENTS.filter((commponent) => { return commponent.componentId === worldComponent.component })[0];
 
@@ -402,7 +413,7 @@ export default function interactionCreate() {
                                 return item.itemId === productionItem.item;
                             })[0];
 
-                            productionText += `${item.emoji} ${((productionItem.amount * worldComponent.level) + (worldComponent.level - 1))}/min `;
+                            productionText += `${item.emoji} ${(((productionItem.amount * worldComponent.level) / 2) + (worldComponent.level - 1))}/min `;
                         });
 
                         fields.push({ name: 'Level', value: worldComponent.level.toString() });

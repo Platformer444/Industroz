@@ -29,10 +29,10 @@ export function createWorld(worldWidth: number, worldHeight: number): number[][]
             if (world[i][j] === 2) {
                 const connections: number[] = [];
 
-                const upTile: number = world[i - 1] === undefined ? 1 : world[i - 1][j];
-                const rightTile: number = world[i][j + 1] === undefined ? 1 : world[i][j + 1];
-                const downTile: number = world[i + 1] === undefined ? 1 : world[i + 1][j];
-                const leftTile: number = world[i][j - 1] === undefined ? 1 : world[i][j - 1];
+                const upTile = world[i - 1] === undefined ? 1 : world[i - 1][j];
+                const rightTile = world[i][j + 1] === undefined ? 1 : world[i][j + 1];
+                const downTile = world[i + 1] === undefined ? 1 : world[i + 1][j];
+                const leftTile = world[i][j - 1] === undefined ? 1 : world[i][j - 1];
 
                 if (upTile === 1) connections.push(0);
                 else connections.push(1);
@@ -48,12 +48,12 @@ export function createWorld(worldWidth: number, worldHeight: number): number[][]
                 })[0];
 
                 if (tile.tileId === 2) {
-                    const spawnable: Component[] = COMPONENTS.filter((component) => {
+                    const spawnable = COMPONENTS.filter((component) => {
                         return component.spawnable;
                     });
 
                     if (generateRandomNumber(1, 2) === 1) {
-                        const randInt: number = generateRandomNumber(0, spawnable.length - 1);
+                        const randInt = generateRandomNumber(0, spawnable.length - 1);
                         tile = TILES.filter((tile) => {
                             return tile.component === spawnable[randInt].componentId;
                         })[0];
@@ -69,7 +69,7 @@ export function createWorld(worldWidth: number, worldHeight: number): number[][]
 }
 
 export function renderWorld(worldArray: number[][], worldWidth: number, worldHeight: number, centreTileI: number, centreTileJ: number): string {
-    let message: string = '';
+    let message = '';
 
     for (let i = centreTileI - (Math.floor(worldHeight / 2)); i < (centreTileI - (Math.floor(worldHeight / 2))) + worldHeight; i++) {
         for (let j = centreTileJ - (Math.floor(worldWidth / 2)); j < (centreTileJ - (Math.floor(worldWidth / 2))) + worldWidth; j++) {

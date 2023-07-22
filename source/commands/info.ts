@@ -8,10 +8,16 @@ export default function info() {
     .setName('info')
     .setDescription('Display information on this bot')
     .setExecute(async function execute(interaction) {
+        const pingMessage = await interaction.reply({
+            content: 'Pinging...',
+            fetchReply: true
+        });
+
         const informationEmbed = new EmbedBuilder()
             .setTitle('About Industroz')
             .setDescription(`Industroz is a fun to play Discord Game Bot made by <@${BotAuthor}> in which you make a Spectacular and Ever Growing Industrial World!`)
             .addFields(
+                { name: 'Ping', value: `${pingMessage.createdTimestamp - interaction.createdTimestamp}ms` },
                 { name: 'Bot Version', value: BotVersion },
                 { name: 'Discord.js Version', value: DiscordJSVersion, inline: true },
                 { name: 'Node.js Version', value: process.version, inline: true }
@@ -31,9 +37,11 @@ export default function info() {
                     .setStyle("Link")
                     .setLabel('GitHub Repository')
                     .setUrl(GitHubRepository)
-            )
+            );
 
-        await interaction.reply({
+
+        await interaction.editReply({
+            content: '',
             components: [buttons["actionRow"]],
             embeds: [informationEmbed]
         });
