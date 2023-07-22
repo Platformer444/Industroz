@@ -1,7 +1,7 @@
 import { EmbedBuilder } from "discord.js";
 import { Inventory, SettingsClass, WorldClass } from "../database.js";
 import { ActionRow, ActionRowBuilder, ButtonBuilder, SelectMenuBuilder } from "../utils/components.js";
-import { COMPONENTS, type Component, ITEMS, TILES, Item } from "./data.js";
+import { COMPONENTS, ITEMS, TILES, Item } from "./data.js";
 
 export function generateRandomNumber(rangeMin: number, rangeMax: number): number {
     return Math.floor(Math.random() * (rangeMax - rangeMin + 1) ) + rangeMin;
@@ -9,15 +9,13 @@ export function generateRandomNumber(rangeMin: number, rangeMax: number): number
 
 export function createWorld(worldWidth: number, worldHeight: number): number[][] {
     const world: number[][] = [];
-    const _worldWidth = worldWidth;
-    const _worldHeight = worldHeight;
 
-    for (let i = 0; i < _worldHeight; i++) {
+    for (let i = 0; i < worldHeight; i++) {
         const worldChunk = [];
-        for (let j = 0; j < _worldWidth; j++) {
-            if (i % _worldHeight === 0 || (i + 1) % _worldHeight === 0) worldChunk.push(1);
+        for (let j = 0; j < worldWidth; j++) {
+            if (i % worldHeight === 0 || (i + 1) % worldHeight === 0) worldChunk.push(1);
             else {
-                if (j % _worldWidth === 0 || (j + 1) % _worldWidth === 0) worldChunk.push(1);
+                if (j % worldWidth === 0 || (j + 1) % worldWidth === 0) worldChunk.push(1);
                 else worldChunk.push(2);
             }
         }

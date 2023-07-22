@@ -27,7 +27,7 @@ export const SETTINGS: Setting[] = [
             "Private"
         ]
     }
-]
+];
 
 // Game Data
 export interface Tile {
