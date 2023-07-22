@@ -12,6 +12,6 @@ export default function ready() {
         await registerCommands(process.env.BOT_TOKEN, process.env.CLIENT_ID);
 
         client.user.setActivity('/world view', { type: ActivityType.Playing });
-        console.log(`Logged in as ${client.user.tag} at v${BotVersion}`);
+        console.log(`Logged in as ${client.user.tag} at v${BotVersion}(${process.env.NODE_ENV})`);
     });
 }

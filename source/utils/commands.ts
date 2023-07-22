@@ -1,4 +1,5 @@
 import { REST, Routes } from "discord.js";
+import "dotenv/config";
 
 export interface Choice {
     name: string,
@@ -21,6 +22,7 @@ export interface Command {
         description: string,
         options: Option[]
     },
+    node_env: "development" | "production",
     autocomplete?: (...args: any[]) => any,
     execute: (...args: any[]) => any
 };
@@ -56,8 +58,27 @@ function defineCommand(command: Command) {
 
     if (!exists) console.log(`\t${command["data"]["name"]} defined!\n`);
     return command;
-};
-export function getCommands() : [Command[], Command["data"][]] { return [commands, commandsData]; };
+}
+
+export function getCommands(node_env: string) : [Command[], Command["data"][]] {
+    const filteredCommands = commands.filter((command) => {
+        if (command.node_env === "production" && node_env === "development") return true;
+        else if (command.node_env === node_env) return true;
+        else return false;
+    });
+
+    return [
+        filteredCommands,
+        commandsData.filter((commandData) => {
+            const filteredCommand = filteredCommands.filter((command) => {
+                return command["data"]["name"] === commandData["name"];
+            })[0];
+
+            if (filteredCommand === undefined) return false;
+            else return true;
+        })
+    ];
+}
 
 /**
  * Register the commands for the Discord Bot
@@ -66,7 +87,7 @@ export function getCommands() : [Command[], Command["data"][]] { return [command
  */
 export async function registerCommands(botToken: string, botClientId: string) {
     const rest: REST = new REST().setToken(botToken);
-    const commands: Command["data"][] = getCommands()[1];
+    const commands: Command["data"][] = getCommands(process.env.NODE_ENV)[1];
 
     await (async () => {
         try {
@@ -129,6 +150,7 @@ export class CommandBuilder {
             description: undefined,
             options: []
         },
+        node_env: "production",
         autocomplete: undefined,
         execute: undefined
     };
@@ -140,6 +162,8 @@ export class CommandBuilder {
     addSubCommand(subCommand: SubCommandBuilder): this { this.command["data"]["options"].push(subCommand["subCommand"]); defineCommand(this.command); return this; };
     
     addOption(option: OptionBuilder): this { this.command["data"]["options"].push(option["option"]); defineCommand(this.command); return this; };
+
+    setNodeEnv(node_env: "development" | "production"): this { this.command["node_env"] = node_env; defineCommand(this.command); return this; };
 
     setAutocomplete(autocomplete: Command["autocomplete"]): this { this.command["autocomplete"] = autocomplete; defineCommand(this.command); return this; };
 

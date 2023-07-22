@@ -5,6 +5,7 @@ import { createWorld, buildNavigationButtons, buildHomeScreen, navigate, editInv
 import { getCommands } from "../utils/commands.js";
 import { ActionRowBuilder, ButtonBuilder, ModalBuilder, SelectMenuBuilder, TextInputBuilder } from "../utils/components.js";
 import { EventBuilder } from "../utils/events.js";
+import "dotenv/config";
 
 export default function interactionCreate() {
     new EventBuilder()
@@ -12,7 +13,7 @@ export default function interactionCreate() {
     .setOnce(false)
     .setExecute(async function execute(interaction) {
         if (interaction.isChatInputCommand()) {
-            const commands = getCommands()[0];
+            const commands = getCommands(process.env.NODE_ENV)[0];
             const command = commands.filter((command) => {
                 return command["data"]["name"] === interaction.commandName;
             })[0];
@@ -34,7 +35,7 @@ export default function interactionCreate() {
             }
             return;
         } else if (interaction.isAutocomplete()) {
-            const commands = getCommands()[0];
+            const commands = getCommands(process.env.NODE_ENV)[0];
             const command = commands.filter((command) => {
                 return command["data"]["name"] === interaction.commandName;
             })[0];
