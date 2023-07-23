@@ -1,4 +1,4 @@
-import { ClientEvents, Interaction, Client } from "discord.js"
+import { ClientEvents } from "discord.js"
 
 export interface Event {
     name: keyof ClientEvents,
