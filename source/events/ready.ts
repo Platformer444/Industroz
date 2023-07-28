@@ -3,6 +3,7 @@ import { BotVersion } from "../resources/data.js";
 import { registerCommands } from "../utils/commands.js";
 import { EventBuilder } from "../utils/events.js";
 import "dotenv/config";
+import { updateUserDatabases } from "../database.js";
 
 export default function ready() {
     new EventBuilder()
@@ -10,6 +11,7 @@ export default function ready() {
     .setOnce(true)
     .setExecute(async function execute(client) {
         await registerCommands(process.env.BOT_TOKEN, process.env.CLIENT_ID);
+        await updateUserDatabases();
 
         client.user.setActivity('/world view', { type: ActivityType.Playing });
         console.log(`Logged in as ${client.user.tag} at v${BotVersion}(${process.env.NODE_ENV})`);

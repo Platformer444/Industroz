@@ -10,6 +10,5 @@
     "esModuleInterop": true,
 	},
   "include": ["source/"],
-	"exclude": ["node_modules", ".git", "package.json"],
-	"typeAcquisition": { "enable": true }
+	"exclude": ["node_modules", ".git", "package.json"]
 }

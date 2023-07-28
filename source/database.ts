@@ -1,4 +1,8 @@
 import Keyv from "keyv";
+import KeyvSqlite from "@keyv/sqlite";
+import sqlite3 from "sqlite3";
+import { createWorld } from "./resources/utils.js";
+const { Database } = sqlite3;
 
 export interface Island {
     islandNum: number,
@@ -27,8 +31,8 @@ export interface Settings {
     worldVisibility: "Public" | "Private"
 }
 
-const WorldsDB = new Keyv('sqlite://database.sqlite', { namespace: 'Worlds' });
-const SettingsDB = new Keyv('sqlite://database.sqlite', { namespace: 'Settings' });
+const WorldsDB = new Keyv({ store: new KeyvSqlite({ uri: 'sqlite://database.sqlite', table: 'Worlds' }) });
+const SettingsDB = new Keyv({ store: new KeyvSqlite({ uri: 'sqlite://database.sqlite', table: 'Settings' }) });
 
 export class WorldClass {
     user: string;
@@ -85,3 +89,66 @@ export class SettingsClass {
         return await SettingsDB.get(this.user);
     }
 };
+
+export async function updateUserDatabases() {
+    const DB = new Database('database.sqlite');
+
+    const WorldDBKeys: any[] = await new Promise((resolve, reject) => {
+        DB.all('SELECT * FROM Worlds', (err, rows) => {
+            if (err) reject(err);
+            else resolve(rows);
+        });
+    });
+    const SettingsDBKeys: any[] = await new Promise((resolve, reject) => {
+        DB.all('SELECT * FROM Settings', (err, rows) => {
+            if (err) reject(err);
+            else resolve(rows);
+        });
+    });
+
+    WorldDBKeys.forEach(async (WorldDBKey) => {
+        const DefaultWorldDB: World = {
+            worldArray: [
+                {
+                    islandNum: 1,
+                    islandArray: [],
+                    centralLocation: [49, 49]
+                }
+            ],
+            components: [],
+            inventory: []
+        };
+
+        const Key = WorldDBKey["key"].replace('keyv:', '');
+        const Value = JSON.parse(WorldDBKey["value"])["value"];
+        const world = new WorldClass(Key);
+
+        Object.keys(DefaultWorldDB).forEach((key) => {
+            if (Value[key] === undefined) {
+                if (key === 'islandArray') DefaultWorldDB["worldArray"][0]["islandArray"] = createWorld(100, 100);
+
+                Value[key] = DefaultWorldDB[key];
+            }
+        });
+
+        await world.saveWorld(Value);
+    });
+
+    SettingsDBKeys.forEach(async (SettingsDBKey) => {
+        const DefaultSettingDB: Settings = {
+            worldVisibility: "Private"
+        };
+
+        const Key = SettingsDBKey["key"].replace('keyv:', '');
+        const Value = JSON.parse(SettingsDBKey["value"])["value"];
+        const settings = new SettingsClass(Key);
+
+        Object.keys(DefaultSettingDB).forEach((key) => {
+            if (Value[key] === undefined) {
+                Value[key] = DefaultSettingDB[key];
+            }
+        });
+
+        await settings.saveSettings(Value);
+    });
+}
