@@ -125,7 +125,7 @@ export async function updateUserDatabases() {
 
         Object.keys(DefaultWorldDB).forEach((key) => {
             if (Value[key] === undefined) {
-                if (key === 'islandArray') DefaultWorldDB["worldArray"][0]["islandArray"] = createWorld(100, 100);
+                if (key === 'worldArray') DefaultWorldDB["worldArray"][0]["islandArray"] = createWorld(100, 100);
 
                 Value[key] = DefaultWorldDB[key];
             }
