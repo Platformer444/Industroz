@@ -60,7 +60,8 @@ export interface Component {
     consumption?: {
         item: number,
         amount: number
-    }[] | undefined
+    }[] | undefined,
+    spawningChance?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10
 };
 
 export interface Item {
@@ -228,6 +229,28 @@ export const TILES: Tile[] = [
                 amount: 1
             }
         ]
+    },
+    {
+        tileId: 18,
+        tileName: 'Land1111CoalDriller',
+        connections: [1, 1, 1, 1],
+        component: 7,
+        emoji: '<:Land1111CoalDriller:1134413116336259112>',
+        canBuiltOn: 17,
+        destroyReplace: 17,
+        destroyGive: [
+            {
+                item: 1,
+                amount: 16
+            }
+        ]
+    },
+    {
+        tileId: 19,
+        tileName: 'Land1111Iron',
+        connections: [1, 1, 1, 1],
+        component: 8,
+        emoji: '<:Land1111Iron:1134413118940917800>'
     }
 ];
 
@@ -236,7 +259,8 @@ export const COMPONENTS: Component[] = [
         componentId: 1,
         componentName: 'Trees',
         spawnable: true,
-        buildable: false
+        buildable: false,
+        spawningChance: 9
     },
     {
         componentId: 2,
@@ -264,7 +288,8 @@ export const COMPONENTS: Component[] = [
         componentId: 3,
         componentName: 'Stone',
         spawnable: true,
-        buildable: false
+        buildable: false,
+        spawningChance: 6
     },
     {
         componentId: 4,
@@ -320,7 +345,37 @@ export const COMPONENTS: Component[] = [
         componentId: 6,
         componentName: 'Coal',
         spawnable: true,
-        buildable: false
+        buildable: false,
+        spawningChance: 8
+    },
+    {
+        componentId: 7,
+        componentName: 'Coal Driller',
+        spawnable: false,
+        buildable: true,
+        buyingDetails: [
+            {
+                item: 1,
+                amount: 18
+            },
+            {
+                item: 3,
+                amount: 8
+            }
+        ],
+        production: [
+            {
+                item: 5,
+                amount: 1
+            }
+        ]
+    },
+    {
+        componentId: 8,
+        componentName: 'Iron',
+        spawnable: true,
+        buildable: false,
+        spawningChance: 5
     }
 ];
 

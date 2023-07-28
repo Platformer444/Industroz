@@ -46,16 +46,18 @@ export function createWorld(worldWidth: number, worldHeight: number): number[][]
                 })[0];
 
                 if (tile.tileId === 2) {
-                    const spawnable = COMPONENTS.filter((component) => {
+                    const spawnables = COMPONENTS.filter((component) => {
                         return component.spawnable;
                     });
 
-                    if (generateRandomNumber(1, 2) === 1) {
-                        const randInt = generateRandomNumber(0, spawnable.length - 1);
-                        tile = TILES.filter((tile) => {
-                            return tile.component === spawnable[randInt].componentId;
-                        })[0];
-                    }
+                    spawnables.forEach((spawnable) => {
+                        if (generateRandomNumber(0, Math.abs(spawnable.spawningChance - 10)) === 0) {
+                            tile = TILES.filter((tile) => {
+                                return tile.component === spawnable.componentId;
+                            })[0];
+                            return;
+                        }
+                    });
                 }
 
                 world[i][j] = tile.tileId;
