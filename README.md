@@ -12,7 +12,7 @@ Industroz is a Fun to Play Discord Game Bot where you create a Prosperous and Sp
 If you want to suggest new ideas or report bugs, then reach out in the Support Server(or open an issue!)
 
 # Contributing
-Check out ![CONTRIBUTTION guide](CONTRIBUTING.md) to learn on how to set up your own version of Industroz and contribute!
+Check out [CONTRIBUTTION guide](CONTRIBUTING.md) to learn on how to set up your own version of Industroz and contribute!
 
 <hr>
 
