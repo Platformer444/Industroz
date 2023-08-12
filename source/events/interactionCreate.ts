@@ -448,6 +448,27 @@ export default function interactionCreate() {
                         ephemeral: true
                     });
                 }
+                else if (interaction.customId.includes('__buyingButton')) {
+                    const item = ITEMS.filter((item) => {
+                        return item.itemName.toLowerCase().replace(' ', '_') === interaction.customId.split('$')[1];
+                    })[0];
+
+                    const buyingModal = new ModalBuilder()
+                        .setCustomid(`__buyingModal$${item.itemName.toLowerCase().replace(' ', '_')}`)
+                        .setTitle(`Buy ${item.itemName}`)
+                        .addComponents(
+                            new ActionRowBuilder()
+                                .addComponents(
+                                    new TextInputBuilder()
+                                        .setCustomId('__buyingItemAmount')
+                                        .setLabel(`How many ${item.itemName} do You want to Buy?`)
+                                        .setRequired(true)
+                                        .setType("Short")
+                                )["actionRow"]
+                        );
+                    
+                    await interaction.showModal(buyingModal["modal"]);
+                }
             }
             else if (interaction.isStringSelectMenu()) {
                 const world = new WorldClass(interaction.user.id);
@@ -524,12 +545,56 @@ export default function interactionCreate() {
                     await settings.saveSettings(settingsJSON);
                     await interaction.reply(`${setting.settingName} was successfully set to ${interaction.values[0]}!`);
                 }
+                else if (interaction.customId === '__shopSelectMenu') {
+                    const worldJSON = await world.getWorld();
+
+                    const item = ITEMS.filter((item) => {
+                        return item.itemName.toLowerCase().replace(' ', '_') === interaction.values[0];
+                    })[0];
+                    const buyingItem = ITEMS.filter((buyingItem) => {
+                        return buyingItem.itemId === item.buyingDetails.item
+                    })[0];
+
+                    const buyingInvItem = worldJSON["inventory"].filter((item) => {
+                        return item.item === buyingItem.itemId;
+                    })[0];
+
+                    const buyingEmbed = new EmbedBuilder()
+                        .setTitle('🛒 Shop')
+                        .addFields(
+                            { name: 'You Pay:', value: `${buyingItem.emoji}${buyingItem.itemName} x${item.buyingDetails.amount}` },
+                            { name: 'To Receive', value: `${item.emoji} ${item.itemName} x1` }
+                        )
+                        .setFooter({ text: buyingInvItem === undefined ? 'You can\'t Buy this Item' : `You can Buy ${(buyingInvItem.quantity - (buyingInvItem.quantity % item.buyingDetails.amount)) / (item.buyingDetails.amount)} ${item.itemName} with the ${buyingItem.itemName} You have.` });
+                    
+                    const buyingButton = new ActionRowBuilder()
+                        .addComponents(
+                            new ButtonBuilder()
+                                .setCustomId(`__buyingButton$${item.itemName.toLowerCase().replace(' ', '_')}`)
+                                .setLabel('Buy')
+                                .setDisabled(buyingInvItem === undefined)
+                                .setStyle("Primary")
+                        );
+
+                    await interaction.reply({
+                        components: [buyingButton["actionRow"]],
+                        embeds: [buyingEmbed]
+                    });
+                }
             }
             else if (interaction.isModalSubmit()) {
                 const world = new WorldClass(interaction.user.id);
 
                 if (interaction.customId.includes('__sellModal')) {
-                    let amount = Number(interaction.fields.getTextInputValue('__itemNumberSell'));
+                    let amount = parseInt(interaction.fields.getTextInputValue('__itemNumberSell'));
+
+                    if (isNaN(amount)) {
+                        await interaction.reply({
+                            content: 'The Amount entered is Invalid!',
+                            ephemeral: true
+                        });
+                        return;
+                    }
 
                     const worldJSON = await world.getWorld();
                     let inventory = worldJSON["inventory"];
@@ -548,6 +613,41 @@ export default function interactionCreate() {
 
                     await world.saveWorld(worldJSON);
                     await interaction.reply(`You sold your ${item.emoji}${item.itemName} x${amount} and got ${sellItem.emoji}${sellItem.itemName} x ${amount * item.sellGive.amount}`);
+                }
+                else if (interaction.customId.includes('buyingModal')) {
+                    const worldJSON = await world.getWorld();
+
+                    const item = ITEMS.filter((item) => {
+                        return item.itemName.toLowerCase().replace(' ', '_') === interaction.customId.split('$')[1];
+                    })[0];
+                    const buyingItem = ITEMS.filter((buyingItem) => {
+                        return buyingItem.itemId === item.buyingDetails.item;
+                    })[0];
+                    const buyingInvItem = worldJSON["inventory"].filter((item) => {
+                        return item.item === buyingItem.itemId;
+                    })[0];
+
+                    let amount = parseInt(interaction.fields.getTextInputValue('__buyingItemAmount'));
+                    const maxAmount = (buyingInvItem.quantity - (buyingInvItem.quantity % item.buyingDetails.amount)) / (item.buyingDetails.amount);
+
+                    if (isNaN(amount)) {
+                        await interaction.reply({
+                            content: 'The Amount entered is Invalid!',
+                            ephemeral: true
+                        });
+                        return;
+                    }
+
+                    if (amount > maxAmount) amount = maxAmount;
+
+                    worldJSON["inventory"] = editInventory(item, "Add", amount, worldJSON["inventory"]);
+                    worldJSON["inventory"] = editInventory(buyingItem, "Remove", amount * item.buyingDetails.amount, worldJSON["inventory"]);
+
+                    await world.saveWorld(worldJSON);
+                    await interaction.reply({
+                        content: `You bought x${amount} ${item.emoji}${item.itemName} for x${amount * item.buyingDetails.amount} ${buyingItem.emoji}${buyingItem.itemName}`,
+                        ephemeral: true
+                    });
                 }
             }
         } else {

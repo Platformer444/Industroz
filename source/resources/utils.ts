@@ -385,26 +385,93 @@ export async function buildItemEmbed(userId: string, itemName: string) {
     const invItem = inventory.filter((invItem) => {
         return invItem.item === item.itemId;
     })[0];
+
     const sellItem = ITEMS.filter((sellItem) => {
-        return sellItem.itemId === (item.sellable ? item.sellGive.item : undefined);
+        return sellItem.itemId === (item.sellGive !== undefined ? item.sellGive.item : undefined);
     })[0];
 
     const itemEmbed = new EmbedBuilder()
         .setTitle(`${item.emoji} ${item.itemName} (x${invItem.quantity})`)
         .setDescription(item.description)
-        .setFooter(item.sellable ? { text: `${item.itemName} x1 -> ${sellItem.itemName} x${item.sellGive.amount}` } : { text: 'Can\'t be sold' });
+        .setFooter(item.sellGive !== undefined ? { text: `${item.itemName} x1 -> ${sellItem.itemName} x${item.sellGive.amount}` } : { text: 'Can\'t be sold' });
 
     const sellButton = new ActionRowBuilder()
         .addComponents(
             new ButtonBuilder()
                 .setCustomId(`__sellItem$${item.itemId}`)
                 .setLabel('Sell')
-                .setDisabled(!item.sellable)
+                .setDisabled(item.sellGive === undefined)
                 .setStyle("Primary")
         );
 
     return {
         components: [sellButton["actionRow"]],
         embeds: [itemEmbed]
+    };
+}
+
+export function buildShopEmbed(page: number = 1) {
+    let description = '';
+    let done = false;
+    const options = [];
+
+    const buyableItems = ITEMS.filter((item) => {
+        return item.buyingDetails !== undefined;
+    });
+
+    for (let i = ((page - 1) * 25); i < ((page * 25) - 1); i++) {
+        if (buyableItems[i] === undefined && i === ((page - 1) * 25)) {
+            done = false;
+            break;
+        }
+
+        if (i > buyableItems.length - 1) break;
+
+        const item = ITEMS.filter((item) => {
+            return item.itemId === buyableItems[i].itemId;
+        })[0];
+
+        const buyingItem = ITEMS.filter((buyingItem) => {
+            return buyingItem.itemId === item.buyingDetails.item;
+        })[0];
+
+        description += `${item.emoji}${item.itemName} x1 (Price: ${buyingItem.emoji}${buyingItem.itemName} x${item.buyingDetails.amount})\n`;
+        options.push({ label: `${item.itemName} x1`, value: item.itemName.toLowerCase().replace(' ', '_'), emoji: item.emoji, description: `${buyingItem.emoji}x${item.buyingDetails.amount}` });
+
+        done = true;
+    }
+
+    if (!done) return undefined;
+
+    const shopEmbed = new EmbedBuilder()
+        .setTitle('🛒 Shop')
+        .setDescription(description);
+    
+    const shopSelectMenu = new ActionRowBuilder()
+        .addComponents(
+            new SelectMenuBuilder()
+                .setType("StringSelect")
+                .setCustomid('__shopSelectMenu')
+                .setPlaceholder('Select an Item to buy...')
+                .addOptions(...options)
+        );
+    
+    const pageNavigationButtons = new ActionRowBuilder()
+        .addComponents(
+            new ButtonBuilder()
+                .setCustomId(`__shopPageNavigate$${page - 1}`)
+                .setLabel(`<< Page ${page - 1}`)
+                .setDisabled((buildShopEmbed(page - 1)) === undefined)
+                .setStyle("Success"),
+            new ButtonBuilder()
+                .setCustomId(`__shopPageNavigate$${page + 1}`)
+                .setLabel(`Page ${page + 1} >>`)
+                .setDisabled((buildShopEmbed(page + 1)) === undefined)
+                .setStyle("Success")
+        );
+
+    return {
+        components: [shopSelectMenu["actionRow"], pageNavigationButtons["actionRow"]],
+        embeds: [shopEmbed]
     };
 }

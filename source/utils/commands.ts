@@ -1,6 +1,3 @@
-import { REST, Routes } from "discord.js";
-import "dotenv/config";
-
 export interface Choice {
     name: string,
     value: string
@@ -78,31 +75,6 @@ export function getCommands(node_env: string) : [Command[], Command["data"][]] {
             else return true;
         })
     ];
-}
-
-/**
- * Register the commands for the Discord Bot
- * @param {string} botToken The Token of the Discord Bot
- * @param {string} botClientId The Client ID of the Discord Bot
- */
-export async function registerCommands(botToken: string, botClientId: string) {
-    const rest: REST = new REST().setToken(botToken);
-    const commands: Command["data"][] = getCommands(process.env.NODE_ENV)[1];
-
-    await (async () => {
-        try {
-            console.log(`Started refreshing ${commands.length} application (/) commands.`);
-    
-            const data: any = await rest.put(
-                Routes.applicationCommands(botClientId),
-                { body: commands },
-            );
-    
-            console.log(`Successfully reloaded ${data.length} application (/) commands.`);
-        } catch (error) {
-            console.error(error);
-        }
-    })();
 }
 
 export class OptionBuilder {

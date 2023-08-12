@@ -6,9 +6,8 @@
   "main": "build/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "npx tsc --project tsconfig.json",
-    "start": "node ./build/database.js && node .",
-    "startBot": "npm run build && npm run start"
+    "build": "npx tsc --project tsconfig.json --watch",
+    "start": "node ./build/database.js && nodemon ."
   },
   "keywords": [
     "Platformer444",
@@ -24,6 +23,7 @@
     "discord.js": "^14.11.0",
     "dotenv": "^16.1.4",
     "keyv": "^4.5.2",
+    "nodemon": "^3.0.1",
     "sqlite3": "^5.1.6"
   }
 }

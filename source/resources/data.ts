@@ -69,8 +69,11 @@ export interface Item {
     itemName: string,
     emoji: string,
     description: string,
-    sellable: boolean,
     sellGive?: {
+        item: number,
+        amount: number
+    } | undefined,
+    buyingDetails?: {
         item: number,
         amount: number
     } | undefined
@@ -385,17 +388,19 @@ export const ITEMS: Item[] = [
         itemName: 'Coins',
         emoji: '🪙',
         description: 'A Shiny Round Currency for Industroz',
-        sellable: false
     },
     {
         itemId: 2,
         itemName: 'Wood',
         emoji: '🪵',
         description: 'The Wood obtained from the Trees cut by Wood Cutters of the Woodcutter Hut',
-        sellable: true,
         sellGive: {
             item: 1,
             amount: 2
+        },
+        buyingDetails: {
+            item: 1,
+            amount: 3
         }
     },
     {
@@ -403,10 +408,13 @@ export const ITEMS: Item[] = [
         itemName: 'Stone',
         emoji: '🪨',
         description: 'A Hard, Not So Spherical, Substance obtained by the Miners of Mining Co.',
-        sellable: true,
         sellGive: {
             item: 1,
             amount: 3
+        },
+        buyingDetails: {
+            item: 1,
+            amount: 4
         }
     },
     {
@@ -414,10 +422,13 @@ export const ITEMS: Item[] = [
         itemName: 'Wooden Plank',
         emoji: '<:WoodenPlanks:1127539636718293134>',
         description: 'A Cuboidal Piece of Usable Material made by cutting and poilishing Wood cut from forests.',
-        sellable: true,
         sellGive: {
             item: 1,
             amount: 2
+        },
+        buyingDetails: {
+            item: 1,
+            amount: 4
         }
     },
     {
@@ -425,10 +436,13 @@ export const ITEMS: Item[] = [
         itemName: 'Coal',
         emoji: '<:Coal:1129713984271044678>',
         description: 'A Rough Piece of Blackish, Not so Spherical Substance Obtained by the Miners of Mining Co.',
-        sellable: true,
         sellGive: {
             item: 1,
             amount: 3
+        },
+        buyingDetails: {
+            item: 1,
+            amount: 5
         }
     }
 ];
