@@ -1,7 +1,7 @@
 import { ComponentType, EmbedBuilder } from "discord.js";
 import { WorldClass, SettingsClass } from "../database.js";
 import { TILES, COMPONENTS, ITEMS, SETTINGS, BotAuthor } from "../resources/data.js";
-import { createWorld, buildNavigationButtons, buildHomeScreen, navigate, editInventory, renderWorld, buildInventoryEmbed, buildItemEmbed } from "../resources/utils.js";
+import { createWorld, buildNavigationButtons, buildHomeScreen, navigate, editInventory, renderWorld, buildInventoryEmbed, buildItemEmbed, buildShopEmbed } from "../resources/utils.js";
 import { getCommands } from "../utils/commands.js";
 import { ActionRowBuilder, ButtonBuilder, ModalBuilder, SelectMenuBuilder, TextInputBuilder } from "../utils/components.js";
 import { EventBuilder } from "../utils/events.js";
@@ -79,7 +79,7 @@ export default function interactionCreate() {
                     });
 
                     await interaction.update({
-                        content: (data.worldExists ? 'Your Industrial World was successfully resetted' : 'Your New Industrial World was successfully created') + '\nView Your Industrial World with </world view:1128692158388514860>',
+                        content: (data.worldExists ? 'Your Industrial World was successfully resetted' : 'Your New Industrial World was successfully created') + `\nView Your Industrial World with </world view:${await interaction.client.application.commands.fetch().then(commands => commands.filter((command) => { return command.name === 'world'; }).at(0).id)}>`,
                         components: [],
                         ephemeral: data.visibility === 'Private'
                     });
@@ -447,6 +447,9 @@ export default function interactionCreate() {
                         embeds: [embed],
                         ephemeral: true
                     });
+                }
+                else if (interaction.customId.includes('__shopPageNavigate')) {
+                    await interaction.update(buildShopEmbed(Number(interaction.customId.split('$')[1])));
                 }
                 else if (interaction.customId.includes('__buyingButton')) {
                     const item = ITEMS.filter((item) => {

@@ -41,7 +41,8 @@ export interface Tile {
     destroyGive?: {
         item: number,
         amount: number
-    }[] | undefined
+    }[] | undefined,
+    spawningChance?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10
 };
 
 export interface Component {
@@ -61,7 +62,6 @@ export interface Component {
         item: number,
         amount: number
     }[] | undefined,
-    spawningChance?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10
 };
 
 export interface Item {
@@ -158,7 +158,8 @@ export const TILES: Tile[] = [
                 item: 2,
                 amount: 1
             }
-        ]
+        ],
+        spawningChance: 9
     },
     {
         tileId: 13,
@@ -187,7 +188,8 @@ export const TILES: Tile[] = [
                 item: 3,
                 amount: 1
             }
-        ]
+        ],
+        spawningChance: 9
     },
     {
         tileId: 15,
@@ -231,7 +233,8 @@ export const TILES: Tile[] = [
                 item: 5,
                 amount: 1
             }
-        ]
+        ],
+        spawningChance: 8
     },
     {
         tileId: 18,
@@ -253,7 +256,8 @@ export const TILES: Tile[] = [
         tileName: 'Land1111Iron',
         connections: [1, 1, 1, 1],
         component: 8,
-        emoji: '<:Land1111Iron:1134413118940917800>'
+        emoji: '<:Land1111Iron:1134413118940917800>',
+        spawningChance: 8
     }
 ];
 
@@ -262,8 +266,7 @@ export const COMPONENTS: Component[] = [
         componentId: 1,
         componentName: 'Trees',
         spawnable: true,
-        buildable: false,
-        spawningChance: 9
+        buildable: false
     },
     {
         componentId: 2,
@@ -291,8 +294,7 @@ export const COMPONENTS: Component[] = [
         componentId: 3,
         componentName: 'Stone',
         spawnable: true,
-        buildable: false,
-        spawningChance: 6
+        buildable: false
     },
     {
         componentId: 4,
@@ -348,8 +350,7 @@ export const COMPONENTS: Component[] = [
         componentId: 6,
         componentName: 'Coal',
         spawnable: true,
-        buildable: false,
-        spawningChance: 8
+        buildable: false
     },
     {
         componentId: 7,
@@ -377,8 +378,7 @@ export const COMPONENTS: Component[] = [
         componentId: 8,
         componentName: 'Iron',
         spawnable: true,
-        buildable: false,
-        spawningChance: 5
+        buildable: false
     }
 ];
 

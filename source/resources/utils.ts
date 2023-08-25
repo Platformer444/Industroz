@@ -16,7 +16,10 @@ export function createWorld(worldWidth: number, worldHeight: number): number[][]
             if (i % worldHeight === 0 || (i + 1) % worldHeight === 0) worldChunk.push(1);
             else {
                 if (j % worldWidth === 0 || (j + 1) % worldWidth === 0) worldChunk.push(1);
-                else worldChunk.push(2);
+                else {
+
+                    worldChunk.push(2);
+                }
             }
         }
         world.push(worldChunk);
@@ -34,10 +37,13 @@ export function createWorld(worldWidth: number, worldHeight: number): number[][]
 
                 if (upTile === 1) connections.push(0);
                 else connections.push(1);
+
                 if (rightTile === 1) connections.push(0);
                 else connections.push(1);
+
                 if (downTile === 1) connections.push(0);
                 else connections.push(1);
+
                 if (leftTile === 1) connections.push(0);
                 else connections.push(1);
 
@@ -45,22 +51,18 @@ export function createWorld(worldWidth: number, worldHeight: number): number[][]
                     return tile.tileName === `Land${connections.join('')}`;
                 })[0];
 
-                if (tile.tileId === 2) {
-                    const spawnables = COMPONENTS.filter((component) => {
-                        return component.spawnable;
-                    });
+                const spawnable = TILES.filter((tile) => {
+                    return tile.spawningChance !== undefined;
+                });
 
-                    spawnables.forEach((spawnable) => {
-                        if (generateRandomNumber(0, Math.abs(spawnable.spawningChance - 10)) === 0) {
-                            tile = TILES.filter((tile) => {
-                                return tile.component === spawnable.componentId;
-                            })[0];
-                            return;
-                        }
-                    });
-                }
+                spawnable.forEach((spawnableTile) => {
+                    if (generateRandomNumber(1, spawnableTile.spawningChance) === 1) {
+                        tile = spawnableTile;
+                        return;
+                    }
+                });
 
-                world[i][j] = tile.tileId;
+                if (tile !== undefined) world[i][j] = tile.tileId;
             }
         }
     }
