@@ -1,5 +1,5 @@
 import { EmbedBuilder } from "discord.js";
-import { Inventory, SettingsClass, WorldClass } from "../database.js";
+import { Inventory, SettingsClass, UniqueIdentifierClass, WorldClass } from "../database.js";
 import { ActionRow, ActionRowBuilder, ButtonBuilder, SelectMenuBuilder } from "../utils/components.js";
 import { COMPONENTS, ITEMS, TILES, Item } from "./data.js";
 
@@ -56,7 +56,7 @@ export function createWorld(worldWidth: number, worldHeight: number): number[][]
                 });
 
                 spawnable.forEach((spawnableTile) => {
-                    if (generateRandomNumber(1, spawnableTile.spawningChance) === 1) {
+                    if (generateRandomNumber(0, Math.abs(spawnableTile.spawningChance - 10)) === 0) {
                         tile = spawnableTile;
                         return;
                     }
@@ -90,6 +90,7 @@ export function renderWorld(worldArray: number[][], worldWidth: number, worldHei
 export async function buildHomeScreen(userId: string, interactor: string, islandNum: number) {
     const world = new WorldClass(userId);
     const settings = new SettingsClass(userId);
+    const id = new UniqueIdentifierClass(userId);
 
     const worldJSON = await world.getWorld();
 
@@ -119,12 +120,12 @@ export async function buildHomeScreen(userId: string, interactor: string, island
     const optionButtons = new ActionRowBuilder()
         .addComponents(
             new ButtonBuilder()
-                .setCustomId(`__worldExplore$${JSON.stringify({ islandNum: islandNum })}`)
+                .setCustomId(`__worldExplore$${JSON.stringify({ islandNum: islandNum, id: await id.getIdFromUserId() })}`)
                 .setLabel('Explore')
                 .setEmoji('🗺️')
                 .setStyle("Primary"),
             new ButtonBuilder()
-                .setCustomId(`__worldBuild$${JSON.stringify({ islandNum: islandNum })}`)
+                .setCustomId(`__worldBuild$${JSON.stringify({ islandNum: islandNum, id: await id.getIdFromUserId() })}`)
                 .setLabel('Build')
                 .setEmoji('🛠️')
                 .setStyle("Primary"),
@@ -153,13 +154,15 @@ export async function buildHomeScreen(userId: string, interactor: string, island
                 .addOptions(...islandOptions)
         )
 
+    if (userId !== interactor) optionButtons["actionRow"]["components"].splice(1, 2);
+
     return {
         content: renderWorld(worldArray, worldWidth, worldHeight, centreTileI, centreTileJ),
-        components: userId === interactor ? [optionButtons["actionRow"], islandSelectMenu["actionRow"]] : []
+        components: userId === interactor ? [optionButtons["actionRow"], islandSelectMenu["actionRow"]] : [optionButtons["actionRow"]]
     }
 }
 
-export function buildNavigationButtons(data, buildConfirmDisable: boolean = false, destroyConfirmDisable: boolean = false, upgradeConfirm: boolean = false): ActionRow[] {
+export function buildNavigationButtons(data, buildConfirmDisable: boolean = false, destroyConfirmDisable: boolean = false, upgradeConfirm: boolean = false, centralLocationDisable: boolean = false): ActionRow[] {
     const optionButtons1 = new ActionRowBuilder()    
         .addComponents(
             new ButtonBuilder()
@@ -218,12 +221,13 @@ export function buildNavigationButtons(data, buildConfirmDisable: boolean = fals
                 .setCustomId(`__setCentralLocation$${JSON.stringify(data)}`)
                 .setLabel('Set Central Location')
                 .setStyle("Primary")
+                .setDisabled(centralLocationDisable)
         );
 
     const optionButtons3 = new ActionRowBuilder()
         .addComponents(
             new ButtonBuilder()
-                .setCustomId('__home')
+                .setCustomId(data["explore"] ? `__home$${data["id"]}`: '__home')
                 .setLabel(data["explore"] ? 'Done' : 'Cancel')
                 .setEmoji(data["explore"] ? '✅' : undefined)
                 .setStyle(data["explore"] ? "Primary" : "Danger"),
@@ -253,7 +257,8 @@ export function buildNavigationButtons(data, buildConfirmDisable: boolean = fals
 }
 
 export async function navigate(userId: string, islandNum: number, data, i: number, j: number, explore: boolean) {
-    const world = new WorldClass(userId);
+    const uniqueIdentifiers = new UniqueIdentifierClass(undefined, Number(data["id"]));
+    const world = new WorldClass(await uniqueIdentifiers.getUserIdFromId());
 
     const worldJSON = await world.getWorld();
     const worldArray = worldJSON["worldArray"][islandNum - 1]["islandArray"];
@@ -278,7 +283,7 @@ export async function navigate(userId: string, islandNum: number, data, i: numbe
 
     return {
         content: renderWorld(worldArray, 5, 5, data["i"], data["j"]),
-        components: buildNavigationButtons(data, buildConfirm, destroyConfirm, upgradeConfirm)
+        components: userId === await uniqueIdentifiers.getUserIdFromId() ? buildNavigationButtons(data, buildConfirm, destroyConfirm, upgradeConfirm) : buildNavigationButtons(data, true, true, true, true)
     }
 }
 

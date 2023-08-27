@@ -33,6 +33,7 @@ export interface Settings {
 
 const WorldsDB = new Keyv({ store: new KeyvSqlite({ uri: 'sqlite://database.sqlite', table: 'Worlds' }) });
 const SettingsDB = new Keyv({ store: new KeyvSqlite({ uri: 'sqlite://database.sqlite', table: 'Settings' }) });
+const UniqueIdentifierDB = new Keyv({ store: new KeyvSqlite({ uri: 'sqlite://database.sqlite', table: 'UniqueIdentifiers' }) });
 
 export class WorldClass {
     user: string;
@@ -89,6 +90,46 @@ export class SettingsClass {
         return await SettingsDB.get(this.user);
     }
 };
+
+export class UniqueIdentifierClass {
+    user: string;
+    id: number;
+
+    constructor(user?: string, id?: number) {
+        this.user = user;
+        this.id = id;
+    }
+
+    async save() {
+        const DB = new Database('database.sqlite');
+
+        const keys: any[] = await new Promise((resolve, reject) => {
+            DB.all('SELECT * FROM UniqueIdentifiers', (err, rows) => {
+                if (err) reject(err);
+                else resolve(rows);
+            });
+        });
+
+        UniqueIdentifierDB.set(this.user, keys.length + 1);
+    }
+
+    async getIdFromUserId(): Promise<number> {
+        return await UniqueIdentifierDB.get(this.user);
+    }
+
+    async getUserIdFromId(): Promise<string> {
+        const DB = new Database('database.sqlite');
+
+        const keys: any[] = await new Promise((resolve, reject) => {
+            DB.all('SELECT * FROM UniqueIdentifiers', (err, rows) => {
+                if (err) reject(err);
+                else resolve(rows);
+            });
+        });
+
+        return keys.filter((key) => { return JSON.parse(key.value)["value"] === this.id })[0].key.replace('keyv:', '');
+    }
+}
 
 export async function updateUserDatabases() {
     const DB = new Database('database.sqlite');

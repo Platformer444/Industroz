@@ -258,6 +258,21 @@ export const TILES: Tile[] = [
         component: 8,
         emoji: '<:Land1111Iron:1134413118940917800>',
         spawningChance: 8
+    },
+    {
+        tileId: 20,
+        tileName: 'Land1111IronDriller',
+        connections: [1, 1, 1, 1],
+        component: 9,
+        emoji: '<:Land1111IronDriller:1134413123860832287>',
+        canBuiltOn: 19,
+        destroyReplace: 19,
+        destroyGive: [
+            {
+                item: 1,
+                amount: 16
+            }
+        ]
     }
 ];
 
@@ -379,6 +394,28 @@ export const COMPONENTS: Component[] = [
         componentName: 'Iron',
         spawnable: true,
         buildable: false
+    },
+    {
+        componentId: 9,
+        componentName: 'IronDriller',
+        spawnable: false,
+        buildable: true,
+        buyingDetails: [
+            {
+                item: 1,
+                amount: 18
+            },
+            {
+                item: 3,
+                amount: 8
+            }
+        ],
+        production: [
+            {
+                item: 6,
+                amount: 1
+            }
+        ]
     }
 ];
 
@@ -434,8 +471,22 @@ export const ITEMS: Item[] = [
     {
         itemId: 5,
         itemName: 'Coal',
-        emoji: '<:Coal:1129713984271044678>',
+        emoji: '<:Coal:1145277460322205718>',
         description: 'A Rough Piece of Blackish, Not so Spherical Substance Obtained by the Miners of Mining Co.',
+        sellGive: {
+            item: 1,
+            amount: 3
+        },
+        buyingDetails: {
+            item: 1,
+            amount: 5
+        }
+    },
+    {
+        itemId: 6,
+        itemName: 'Iron',
+        emoji: '<:Iron:1145280325602263080>',
+        description: 'A Rustable Hard Reddish Metal Obtained by the Miners of Mining Co.',
         sellGive: {
             item: 1,
             amount: 3

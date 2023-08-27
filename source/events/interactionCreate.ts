@@ -1,5 +1,5 @@
 import { ComponentType, EmbedBuilder } from "discord.js";
-import { WorldClass, SettingsClass } from "../database.js";
+import { WorldClass, SettingsClass, UniqueIdentifierClass } from "../database.js";
 import { TILES, COMPONENTS, ITEMS, SETTINGS, BotAuthor } from "../resources/data.js";
 import { createWorld, buildNavigationButtons, buildHomeScreen, navigate, editInventory, renderWorld, buildInventoryEmbed, buildItemEmbed, buildShopEmbed } from "../resources/utils.js";
 import { getCommands } from "../utils/commands.js";
@@ -30,12 +30,9 @@ export default function interactionCreate() {
                 });
                 else command.execute(interaction);
             } catch (error) {
-                console.error(error);
-                if (interaction.replied || interaction.deferred) {
-                    await interaction.followUp({ content: 'There was an error while executing this command!', ephemeral: true });
-                } else {
-                    await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
-                }
+                console.log(error);
+                if (interaction.replied || interaction.deferred) await interaction.followUp({ content: 'There was an error while executing this command!', ephemeral: true });
+                else await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
             }
             return;
         } else if (interaction.isAutocomplete()) {
@@ -61,6 +58,7 @@ export default function interactionCreate() {
             if (interaction.isButton()) {
                 const world = new WorldClass(interaction.user.id);
                 const settings = new SettingsClass(interaction.user.id);
+                const uniqueIdentifiers1 = new UniqueIdentifierClass(interaction.user.id);
 
                 if (interaction.customId === '__worldCreationCancel') { await interaction.update({ content: `~~${interaction.message.content}~~`, components: [] }); }
                 else if (interaction.customId.includes('__worldCreationConfirm')) {
@@ -78,6 +76,8 @@ export default function interactionCreate() {
                         worldVisibility: data.visibility
                     });
 
+                    await uniqueIdentifiers1.save();
+
                     await interaction.update({
                         content: (data.worldExists ? 'Your Industrial World was successfully resetted' : 'Your New Industrial World was successfully created') + `\nView Your Industrial World with </world view:${await interaction.client.application.commands.fetch().then(commands => commands.filter((command) => { return command.name === 'world'; }).at(0).id)}>`,
                         components: [],
@@ -86,6 +86,7 @@ export default function interactionCreate() {
                 }
                 else if (interaction.customId.includes('__worldExplore')) {
                     const data = JSON.parse(interaction.customId.split('$')[1]);
+                    const uniqueIdentifiers2 = new UniqueIdentifierClass(undefined, data["id"]);
 
                     const worldJSON = await world.getWorld();
 
@@ -105,7 +106,7 @@ export default function interactionCreate() {
 
                     const upgradeConfirm = component === undefined ? true : !component.buildable;
                     
-                    await interaction.update({ components: buildNavigationButtons({ i: centreTileI, j: centreTileJ, island: data["islandNum"], explore: true, selectedTile: worldArray[centreTileI][centreTileJ] }, false, destroyConfirm, upgradeConfirm)});
+                    await interaction.update({ components: interaction.user.id === await uniqueIdentifiers2.getUserIdFromId() ? buildNavigationButtons({ i: centreTileI, j: centreTileJ, island: data["islandNum"], explore: true, selectedTile: worldArray[centreTileI][centreTileJ], id: data["id"] }, false, destroyConfirm, upgradeConfirm) : buildNavigationButtons({ i: centreTileI, j: centreTileJ, island: data["islandNum"], explore: true, selectedTile: worldArray[centreTileI][centreTileJ], id: data["id"] }, true, true, true, true) });
                 }
                 else if (interaction.customId.includes('__worldBuild')) {
                     const data = interaction.customId.split('$')[1];
@@ -151,7 +152,12 @@ export default function interactionCreate() {
         
                     await interaction.update({ components: [buildableSelectMenu["actionRow"], homeButton["actionRow"]] });
                 }
-                else if (interaction.customId === '__home') { await interaction.update(await buildHomeScreen(interaction.user.id, interaction.user.id, 1)); }
+                else if (interaction.customId.includes('__home')) {
+                    const id = interaction.customId.includes('$') ? Number(interaction.customId.split('$')[1]) : undefined;
+                    const uniqueIdentifiers2 = new UniqueIdentifierClass(undefined, id);
+
+                    await interaction.update(await buildHomeScreen(id === undefined ? interaction.user.id : await uniqueIdentifiers2.getUserIdFromId(), interaction.user.id, 1));
+                }
                 else if (interaction.customId.includes('__navigation')) {
                     const data = JSON.parse(interaction.customId.split('$')[1]);
 
@@ -531,7 +537,7 @@ export default function interactionCreate() {
                     
                     await interaction.update({
                         content: renderWorld(worldArray, 5, 5, centreTileI, centreTileJ),
-                        components: buildNavigationButtons({ i: centreTileI, j: centreTileJ, island: data["islandNum"], explore: false, selectedTile: selectedBuildableTile.tileId }, buildConfirm)
+                        components: buildNavigationButtons({ i: centreTileI, j: centreTileJ, island: data["islandNum"], explore: false, selectedTile: selectedBuildableTile.tileId, id: data["id"] }, buildConfirm)
                     });
                 }
                 else if (interaction.customId === '__itemSelectMenu') {
@@ -564,6 +570,7 @@ export default function interactionCreate() {
 
                     const buyingEmbed = new EmbedBuilder()
                         .setTitle('🛒 Shop')
+                        .setDescription(item.description)
                         .addFields(
                             { name: 'You Pay:', value: `${buyingItem.emoji}${buyingItem.itemName} x${item.buyingDetails.amount}` },
                             { name: 'To Receive', value: `${item.emoji} ${item.itemName} x1` }
