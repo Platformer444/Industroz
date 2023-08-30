@@ -35,6 +35,16 @@ const WorldsDB = new Keyv({ store: new KeyvSqlite({ uri: 'sqlite://database.sqli
 const SettingsDB = new Keyv({ store: new KeyvSqlite({ uri: 'sqlite://database.sqlite', table: 'Settings' }) });
 const UniqueIdentifierDB = new Keyv({ store: new KeyvSqlite({ uri: 'sqlite://database.sqlite', table: 'UniqueIdentifiers' }) });
 
+export async function getAllKeysFromDB(Table: string): Promise<{ key: string, value: string }[]> {
+    const DB = new Database('database.sqlite');
+    return await new Promise((resolve, reject) => {
+        DB.all(`SELECT * FROM ${Table}`, (err, rows: { key: string, value: string }[]) => {
+            if (err) reject(err);
+            else resolve(rows);
+        });
+    });
+}
+
 export class WorldClass {
     user: string;
 
@@ -101,15 +111,7 @@ export class UniqueIdentifierClass {
     }
 
     async save() {
-        const DB = new Database('database.sqlite');
-
-        const keys: any[] = await new Promise((resolve, reject) => {
-            DB.all('SELECT * FROM UniqueIdentifiers', (err, rows) => {
-                if (err) reject(err);
-                else resolve(rows);
-            });
-        });
-
+        const keys = await getAllKeysFromDB('UniqueIdentifiers');
         UniqueIdentifierDB.set(this.user, keys.length + 1);
     }
 
@@ -118,34 +120,14 @@ export class UniqueIdentifierClass {
     }
 
     async getUserIdFromId(): Promise<string> {
-        const DB = new Database('database.sqlite');
-
-        const keys: any[] = await new Promise((resolve, reject) => {
-            DB.all('SELECT * FROM UniqueIdentifiers', (err, rows) => {
-                if (err) reject(err);
-                else resolve(rows);
-            });
-        });
-
+        const keys = await getAllKeysFromDB('UniqueIdentifiers');
         return keys.filter((key) => { return JSON.parse(key.value)["value"] === this.id })[0].key.replace('keyv:', '');
     }
 }
 
 export async function updateUserDatabases() {
-    const DB = new Database('database.sqlite');
-
-    const WorldDBKeys: any[] = await new Promise((resolve, reject) => {
-        DB.all('SELECT * FROM Worlds', (err, rows) => {
-            if (err) reject(err);
-            else resolve(rows);
-        });
-    });
-    const SettingsDBKeys: any[] = await new Promise((resolve, reject) => {
-        DB.all('SELECT * FROM Settings', (err, rows) => {
-            if (err) reject(err);
-            else resolve(rows);
-        });
-    });
+    const WorldDBKeys = await getAllKeysFromDB('Worlds');
+    const SettingsDBKeys = await getAllKeysFromDB('Settings')
 
     WorldDBKeys.forEach(async (WorldDBKey) => {
         const DefaultWorldDB: World = {

@@ -1,6 +1,6 @@
 import { EmbedBuilder } from "discord.js";
 import { Inventory, SettingsClass, UniqueIdentifierClass, WorldClass } from "../database.js";
-import { ActionRow, ActionRowBuilder, ButtonBuilder, SelectMenuBuilder } from "../utils/components.js";
+import { ActionRow, ActionRowBuilder, ButtonBuilder, SelectMenuBuilder, SelectMenuOption } from "../utils/components.js";
 import { COMPONENTS, ITEMS, TILES, Item } from "./data.js";
 
 export function generateRandomNumber(rangeMin: number, rangeMax: number): number {
@@ -320,68 +320,6 @@ export function editInventory(item: Item, addOrRemove: 'Add' | 'Remove', quantit
     else return undefined;
 }
 
-export async function buildInventoryEmbed(userId: string, username: string, page: number = 1) {
-    let description = '';
-    let done = false;
-    const options = [];
-
-    const world = new WorldClass(userId);
-
-    const inventory = (await world.getWorld())["inventory"];
-
-    for (let i = ((page - 1) * 25); i < ((page * 25) - 1); i++) {
-        if (inventory[i] === undefined && i === ((page - 1) * 25)) {
-            done = false;
-            break;
-        }
-        
-        if ((i + 1) > inventory.length) break;
-
-        const item = ITEMS.filter((item) => {
-            return item.itemId === inventory[i].item;
-        })[0];
-
-        description += `${item.emoji}${item.itemName} x${inventory[i].quantity}\n`;
-        options.push({ label: item.itemName, value: item.itemName.toLowerCase().replace(' ', '_'), emoji: item.emoji, description: item.description });
-
-        done = true;
-    }
-
-    if (!done) return undefined;
-
-    const itemEmbed = new EmbedBuilder()
-        .setTitle(`${username}'s Inventory`)
-        .setDescription(description);
-    
-    const itemSelectMenu = new ActionRowBuilder()
-        .addComponents(
-            new SelectMenuBuilder()
-                .setType("StringSelect")
-                .setCustomid('__itemSelectMenu')
-                .setPlaceholder('Select an Item...')
-                .addOptions(...options)
-        );
-    
-    const pageNavigationButtons = new ActionRowBuilder()
-        .addComponents(
-            new ButtonBuilder()
-                .setCustomId(`__itemPageNavigate$${page - 1}`)
-                .setLabel(`<< Page ${page - 1}`)
-                .setDisabled((await buildInventoryEmbed(userId, username, page - 1)) === undefined)
-                .setStyle("Success"),
-            new ButtonBuilder()
-                .setCustomId(`__itemPageNavigate$${page + 1}`)
-                .setLabel(`Page ${page + 1} >>`)
-                .setDisabled((await buildInventoryEmbed(userId, username, page + 1)) === undefined)
-                .setStyle("Success")
-        );
-
-    return {
-        components: [itemSelectMenu["actionRow"], pageNavigationButtons["actionRow"]],
-        embeds: [itemEmbed]
-    };
-}
-
 export async function buildItemEmbed(userId: string, itemName: string) {
     const world = new WorldClass(userId);
     const inventory = (await world.getWorld())["inventory"];
@@ -416,69 +354,64 @@ export async function buildItemEmbed(userId: string, itemName: string) {
         embeds: [itemEmbed]
     };
 }
-
-export function buildShopEmbed(page: number = 1) {
+export function buildListEmbed<ListType extends Array<any>>(
+    list: ListType, item: (List: ListType, Index: number) => [string, SelectMenuOption],
+    page: number = 1,
+    options: {
+        CustomIDPrefix: string,
+        EmbedTitle: string,
+        SelectMenuPlaceholder: string,
+    }
+) {
     let description = '';
     let done = false;
-    const options = [];
-
-    const buyableItems = ITEMS.filter((item) => {
-        return item.buyingDetails !== undefined;
-    });
+    const Options = [];
 
     for (let i = ((page - 1) * 25); i < ((page * 25) - 1); i++) {
-        if (buyableItems[i] === undefined && i === ((page - 1) * 25)) {
+        if (list[i] === undefined && i === ((page - 1) * 25)) {
             done = false;
             break;
         }
+        
+        if ((i + 1) > list.length) break;
 
-        if (i > buyableItems.length - 1) break;
-
-        const item = ITEMS.filter((item) => {
-            return item.itemId === buyableItems[i].itemId;
-        })[0];
-
-        const buyingItem = ITEMS.filter((buyingItem) => {
-            return buyingItem.itemId === item.buyingDetails.item;
-        })[0];
-
-        description += `${item.emoji}${item.itemName} x1 (Price: ${buyingItem.emoji}${buyingItem.itemName} x${item.buyingDetails.amount})\n`;
-        options.push({ label: `${item.itemName} x1`, value: item.itemName.toLowerCase().replace(' ', '_'), emoji: item.emoji, description: `${buyingItem.emoji}x${item.buyingDetails.amount}` });
+        description += item(list, i)[0];
+        Options.push(item(list, i)[1]);
 
         done = true;
     }
 
     if (!done) return undefined;
 
-    const shopEmbed = new EmbedBuilder()
-        .setTitle('🛒 Shop')
+    const embed = new EmbedBuilder()
+        .setTitle(options["EmbedTitle"])
         .setDescription(description);
-    
-    const shopSelectMenu = new ActionRowBuilder()
+
+    const selectMenu = new ActionRowBuilder()
         .addComponents(
             new SelectMenuBuilder()
                 .setType("StringSelect")
-                .setCustomid('__shopSelectMenu')
-                .setPlaceholder('Select an Item to buy...')
-                .addOptions(...options)
+                .setCustomid(`__${options["CustomIDPrefix"]}SelectMenu`)
+                .setPlaceholder(options["SelectMenuPlaceholder"])
+                .addOptions(...Options)
         );
-    
+
     const pageNavigationButtons = new ActionRowBuilder()
         .addComponents(
             new ButtonBuilder()
-                .setCustomId(`__shopPageNavigate$${page - 1}`)
+                .setCustomId(`__${options["CustomIDPrefix"]}PageNavigate$${page - 1}`)
                 .setLabel(`<< Page ${page - 1}`)
-                .setDisabled((buildShopEmbed(page - 1)) === undefined)
+                .setDisabled((buildListEmbed<ListType>(list, item, page - 1, options)) === undefined)
                 .setStyle("Success"),
             new ButtonBuilder()
-                .setCustomId(`__shopPageNavigate$${page + 1}`)
+                .setCustomId(`__${options["CustomIDPrefix"]}PageNavigate$${page + 1}`)
                 .setLabel(`Page ${page + 1} >>`)
-                .setDisabled((buildShopEmbed(page + 1)) === undefined)
+                .setDisabled((buildListEmbed<ListType>(list, item, page + 1, options)) === undefined)
                 .setStyle("Success")
         );
 
     return {
-        components: [shopSelectMenu["actionRow"], pageNavigationButtons["actionRow"]],
-        embeds: [shopEmbed]
+        embeds: [embed],
+        components: [selectMenu["actionRow"], pageNavigationButtons["actionRow"]]
     };
 }

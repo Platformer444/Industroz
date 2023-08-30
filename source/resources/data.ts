@@ -486,7 +486,7 @@ export const ITEMS: Item[] = [
         itemId: 6,
         itemName: 'Iron',
         emoji: '<:Iron:1145280325602263080>',
-        description: 'A Rustable Hard Reddish Metal Obtained by the Miners of Mining Co.',
+        description: 'A Rustable, Hard, Reddish Metal Obtained by the Miners of Mining Co.',
         sellGive: {
             item: 1,
             amount: 3

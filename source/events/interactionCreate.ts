@@ -1,7 +1,7 @@
 import { ComponentType, EmbedBuilder } from "discord.js";
-import { WorldClass, SettingsClass, UniqueIdentifierClass } from "../database.js";
-import { TILES, COMPONENTS, ITEMS, SETTINGS, BotAuthor } from "../resources/data.js";
-import { createWorld, buildNavigationButtons, buildHomeScreen, navigate, editInventory, renderWorld, buildInventoryEmbed, buildItemEmbed, buildShopEmbed } from "../resources/utils.js";
+import { WorldClass, SettingsClass, UniqueIdentifierClass, Inventory } from "../database.js";
+import { TILES, COMPONENTS, ITEMS, SETTINGS, BotAuthor, Item } from "../resources/data.js";
+import { createWorld, buildNavigationButtons, buildHomeScreen, navigate, editInventory, renderWorld, buildItemEmbed, buildListEmbed } from "../resources/utils.js";
 import { getCommands } from "../utils/commands.js";
 import { ActionRowBuilder, ButtonBuilder, ModalBuilder, SelectMenuBuilder, TextInputBuilder } from "../utils/components.js";
 import { EventBuilder } from "../utils/events.js";
@@ -308,7 +308,25 @@ export default function interactionCreate() {
                 }
                 else if (interaction.customId.includes('__itemPageNavigate')) {
                     const page = Number(interaction.customId.split('$')[1]);
-                    await interaction.update(await buildInventoryEmbed(interaction.user.id, interaction.user.username, page))
+                    await interaction.update(await buildListEmbed<Inventory[]>(
+                        (await (new WorldClass(interaction.user.id)).getWorld())["inventory"],
+                        (List, Index) => {
+                            const Item = ITEMS.filter((item) => {
+                                return item.itemId === List[Index]["item"];
+                            })[0];
+            
+                            return [
+                                `${Item.emoji} ${Item.itemName} x${List[Index]["quantity"]}`,
+                                { label: Item.itemName, value: Item.itemName, emoji: Item.emoji, description: Item.description }
+                            ];
+                        },
+                        page,
+                        {
+                            CustomIDPrefix: "inventory",
+                            EmbedTitle: `${interaction.user.username}`,
+                            SelectMenuPlaceholder: 'Select an Item to View...'
+                        }
+                    ))
                 }
                 else if (interaction.customId.includes('__sellItem')) {
                     const item = ITEMS.filter((item) => {
@@ -455,7 +473,28 @@ export default function interactionCreate() {
                     });
                 }
                 else if (interaction.customId.includes('__shopPageNavigate')) {
-                    await interaction.update(buildShopEmbed(Number(interaction.customId.split('$')[1])));
+                    await interaction.update(buildListEmbed<Item[]>(
+                        ITEMS.filter((item) => { return item.buyingDetails !== undefined }),
+                        (List, Index) => {
+                            const item = ITEMS.filter((item) => {
+                                return item.itemId === List[Index].itemId;
+                            })[0];
+                            const buyingItem = ITEMS.filter((buyingItem) => {
+                                return buyingItem.itemId === item.buyingDetails.item;
+                            })[0];
+        
+                            return [
+                                `${item.emoji}${item.itemName} x1 (Price: ${buyingItem.emoji}${buyingItem.itemName} x${item.buyingDetails.amount})\n`,
+                                { label: `${item.itemName} x1`, value: item.itemName.toLowerCase().replace(' ', '_'), emoji: item.emoji, description: `${buyingItem.emoji}x${item.buyingDetails.amount}` }
+                            ]
+                        },
+                        Number(interaction.customId.split('$')[1]),
+                        {
+                            CustomIDPrefix: 'shop',
+                            EmbedTitle: '🛒 Shop',
+                            SelectMenuPlaceholder: 'Select an Item to Buy...'
+                        })
+                    );
                 }
                 else if (interaction.customId.includes('__buyingButton')) {
                     const item = ITEMS.filter((item) => {

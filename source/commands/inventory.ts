@@ -1,6 +1,6 @@
-import { WorldClass } from "../database.js";
+import { Inventory, WorldClass } from "../database.js";
 import { ITEMS } from "../resources/data.js";
-import { buildItemEmbed, buildInventoryEmbed } from "../resources/utils.js";
+import { buildItemEmbed, buildListEmbed } from "../resources/utils.js";
 import { CommandBuilder, OptionBuilder } from "../utils/commands.js";
 
 export default function inventory() {
@@ -50,6 +50,24 @@ export default function inventory() {
                 ephemeral: true
             });
         }
-        else await interaction.reply(await buildInventoryEmbed(interaction.user.id, interaction.user.username));
+        else await interaction.reply(buildListEmbed<Inventory[]>(
+            (await (new WorldClass(interaction.user.id)).getWorld())["inventory"],
+            (List, Index) => {
+                const Item = ITEMS.filter((item) => {
+                    return item.itemId === List[Index]["item"];
+                })[0];
+
+                return [
+                    `${Item.emoji} ${Item.itemName} x${List[Index]["quantity"]}\n`,
+                    { label: Item.itemName, value: Item.itemName.toLowerCase().replace(' ', '_'), emoji: Item.emoji, description: Item.description }
+                ];
+            },
+            1,
+            {
+                CustomIDPrefix: 'item',
+                EmbedTitle: `${interaction.user.username}`,
+                SelectMenuPlaceholder: 'Select an Item to View...'
+            }
+        ));
     });
 }
