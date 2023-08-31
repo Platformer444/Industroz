@@ -331,6 +331,11 @@ export async function buildItemEmbed(userId: string, itemName: string) {
         return invItem.item === item.itemId;
     })[0];
 
+    if (invItem === undefined) return {
+        content: `You don't have any ${item.itemName} in Your Inventory!`,
+        ephemeral: true
+    };
+
     const sellItem = ITEMS.filter((sellItem) => {
         return sellItem.itemId === (item.sellGive !== undefined ? item.sellGive.item : undefined);
     })[0];
@@ -354,6 +359,7 @@ export async function buildItemEmbed(userId: string, itemName: string) {
         embeds: [itemEmbed]
     };
 }
+
 export function buildListEmbed<ListType extends Array<any>>(
     list: ListType, item: (List: ListType, Index: number) => [string, SelectMenuOption],
     page: number = 1,

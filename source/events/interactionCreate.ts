@@ -645,6 +645,14 @@ export default function interactionCreate() {
                         return;
                     }
 
+                    if (amount < 0) {
+                        await interaction.reply({
+                            content: 'You can\'t Sell Negative Items!',
+                            ephemeral: true
+                        });
+                        return;
+                    }
+
                     const worldJSON = await world.getWorld();
                     let inventory = worldJSON["inventory"];
 
@@ -661,7 +669,10 @@ export default function interactionCreate() {
                     inventory = editInventory(sellItem, "Add", amount * item.sellGive.amount, inventory);
 
                     await world.saveWorld(worldJSON);
-                    await interaction.reply(`You sold your ${item.emoji}${item.itemName} x${amount} and got ${sellItem.emoji}${sellItem.itemName} x ${amount * item.sellGive.amount}`);
+                    await interaction.reply({
+                        content: `You sold your ${item.emoji}${item.itemName} x${amount} and got ${sellItem.emoji}${sellItem.itemName} x ${amount * item.sellGive.amount}`,
+                        ephemeral: true
+                    });
                 }
                 else if (interaction.customId.includes('buyingModal')) {
                     const worldJSON = await world.getWorld();
@@ -682,6 +693,14 @@ export default function interactionCreate() {
                     if (isNaN(amount)) {
                         await interaction.reply({
                             content: 'The Amount entered is Invalid!',
+                            ephemeral: true
+                        });
+                        return;
+                    }
+
+                    if (amount < 0) {
+                        await interaction.reply({
+                            content: 'You can\'t Buy Negative Items!',
                             ephemeral: true
                         });
                         return;
