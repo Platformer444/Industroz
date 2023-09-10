@@ -1,6 +1,6 @@
 import { ComponentType, EmbedBuilder } from "discord.js";
 import { WorldClass, SettingsClass, UniqueIdentifierClass, Inventory } from "../database.js";
-import { TILES, COMPONENTS, ITEMS, SETTINGS, BotAuthor, Item } from "../resources/data.js";
+import { TILES, COMPONENTS, ITEMS, SETTINGS, BotAuthor, Item, NoEmoji } from "../resources/data.js";
 import { createWorld, buildNavigationButtons, buildHomeScreen, navigate, editInventory, renderWorld, buildItemEmbed, buildListEmbed } from "../resources/utils.js";
 import { getCommands } from "../utils/commands.js";
 import { ActionRowBuilder, ButtonBuilder, ModalBuilder, SelectMenuBuilder, TextInputBuilder } from "../utils/components.js";
@@ -25,7 +25,7 @@ export default function interactionCreate() {
 
             try {
                 if (command["node_env"] === "development" && interaction.user.id !== BotAuthor) await interaction.reply({
-                    content: 'You don\'t have the permission to use the following command',
+                    content: `${NoEmoji} You don\'t have the permission to use the following command`,
                     ephemeral: true
                 });
                 else command.execute(interaction);
@@ -54,7 +54,12 @@ export default function interactionCreate() {
             return;
         }
 
-        if (interaction.user.id === interaction.member.user.id) {
+        if (
+            ComponentType[interaction.componentType] === undefined ||
+            interaction.message.interaction === null ? 
+                (await (await (await interaction.client.guilds.fetch(interaction.message.reference.guildId)).channels.fetch(interaction.message.reference.channelId)).messages.fetch(interaction.message.reference.messageId)).interaction.user.id === interaction.user.id : 
+                interaction.message.interaction.user.id === interaction.user.id
+        ) {
             if (interaction.isButton()) {
                 const world = new WorldClass(interaction.user.id);
                 const settings = new SettingsClass(interaction.user.id);
@@ -239,7 +244,7 @@ export default function interactionCreate() {
                         return;
                     } else {
                         await interaction.reply({
-                            content: 'You don\'t have enough Items to Build that!',
+                            content: `${NoEmoji} You don\'t have enough Items to Build that!`,
                             ephemeral: true
                         });
                     }
@@ -360,7 +365,7 @@ export default function interactionCreate() {
 
                     if (worldComponent === undefined) {
                         await interaction.reply({
-                            content: 'The Tile you want to Upgrade is Invalid!',
+                            content: `${NoEmoji} The Tile you want to Upgrade is Invalid!`,
                             ephemeral: true
                         });
                         return;
@@ -536,7 +541,7 @@ export default function interactionCreate() {
         
                         if (newInv === undefined) {
                             await interaction.reply({
-                                content: 'You don\'t have enough Money to Create a new Island!',
+                                content: `${NoEmoji} You don\'t have enough Money to Create a new Island!`,
                                 ephemeral: true
                             });
                             return;
@@ -639,7 +644,7 @@ export default function interactionCreate() {
 
                     if (isNaN(amount)) {
                         await interaction.reply({
-                            content: 'The Amount entered is Invalid!',
+                            content: `${NoEmoji} The Amount entered is Invalid!`,
                             ephemeral: true
                         });
                         return;
@@ -647,7 +652,7 @@ export default function interactionCreate() {
 
                     if (amount < 0) {
                         await interaction.reply({
-                            content: 'You can\'t Sell Negative Items!',
+                            content: `${NoEmoji} You can\'t Sell Negative Items!`,
                             ephemeral: true
                         });
                         return;
@@ -692,7 +697,7 @@ export default function interactionCreate() {
 
                     if (isNaN(amount)) {
                         await interaction.reply({
-                            content: 'The Amount entered is Invalid!',
+                            content: `${NoEmoji} The Amount entered is Invalid!`,
                             ephemeral: true
                         });
                         return;
@@ -700,7 +705,7 @@ export default function interactionCreate() {
 
                     if (amount < 0) {
                         await interaction.reply({
-                            content: 'You can\'t Buy Negative Items!',
+                            content: `${NoEmoji} You can\'t Buy Negative Items!`,
                             ephemeral: true
                         });
                         return;
@@ -720,7 +725,7 @@ export default function interactionCreate() {
             }
         } else {
             await interaction.reply({
-                content: `You can\`t Use Someone Else\'s ${ComponentType[interaction.componentType]}!`,
+                content: `${NoEmoji} You can\'t Use Someone Else\'s ${ComponentType[interaction.componentType]}!`,
                 ephemeral: true
             });
         }

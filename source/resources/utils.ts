@@ -1,7 +1,7 @@
 import { EmbedBuilder } from "discord.js";
 import { Inventory, SettingsClass, UniqueIdentifierClass, WorldClass } from "../database.js";
 import { ActionRow, ActionRowBuilder, ButtonBuilder, SelectMenuBuilder, SelectMenuOption } from "../utils/components.js";
-import { COMPONENTS, ITEMS, TILES, Item } from "./data.js";
+import { COMPONENTS, ITEMS, TILES, Item, NoEmoji } from "./data.js";
 
 export function generateRandomNumber(rangeMin: number, rangeMax: number): number {
     return Math.floor(Math.random() * (rangeMax - rangeMin + 1) ) + rangeMin;
@@ -158,7 +158,8 @@ export async function buildHomeScreen(userId: string, interactor: string, island
 
     return {
         content: renderWorld(worldArray, worldWidth, worldHeight, centreTileI, centreTileJ),
-        components: userId === interactor ? [optionButtons["actionRow"], islandSelectMenu["actionRow"]] : [optionButtons["actionRow"]]
+        components: userId === interactor ? [optionButtons["actionRow"], islandSelectMenu["actionRow"]] : [optionButtons["actionRow"]],
+        ephemeral: (await settings.getSettings())["worldVisibility"] === "Private"
     }
 }
 
@@ -332,7 +333,7 @@ export async function buildItemEmbed(userId: string, itemName: string) {
     })[0];
 
     if (invItem === undefined) return {
-        content: `You don't have any ${item.itemName} in Your Inventory!`,
+        content: `${NoEmoji} You don't have any ${item.itemName} in Your Inventory!`,
         ephemeral: true
     };
 

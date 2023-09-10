@@ -2,6 +2,7 @@ import { ButtonBuilder, ActionRowBuilder } from "../utils/components.js";
 import { WorldClass } from "../database.js";
 import { buildHomeScreen } from "../resources/utils.js";
 import { CommandBuilder, OptionBuilder, SubCommandBuilder } from "../utils/commands.js";
+import { NoEmoji } from "../resources/data.js";
 
 
 export default function world() {
@@ -89,7 +90,7 @@ export default function world() {
 
             if (user.bot) {
                 await interaction.reply({
-                    content: 'Bots can\'t make Worlds!',
+                    content: `${NoEmoji} Bots can\'t make Worlds!`,
                     ephemeral: true
                 });
                 return;

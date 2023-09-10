@@ -1,5 +1,5 @@
 import { Inventory, WorldClass } from "../database.js";
-import { ITEMS } from "../resources/data.js";
+import { ITEMS, NoEmoji } from "../resources/data.js";
 import { buildItemEmbed, buildListEmbed } from "../resources/utils.js";
 import { CommandBuilder, OptionBuilder } from "../utils/commands.js";
 
@@ -46,7 +46,7 @@ export default function inventory() {
             })[0];
             if (filteredItem !== undefined) await interaction.reply(await buildItemEmbed(interaction.user.id, filteredItem.itemName.toLowerCase().replace(' ', '_')));
             else await interaction.reply({
-                content: `There is no such Item as ${item} in your Inventory!`,
+                content: `${NoEmoji} There is no such Item as ${item} in your Inventory!`,
                 ephemeral: true
             });
         }

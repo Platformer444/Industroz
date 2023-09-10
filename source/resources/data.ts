@@ -5,6 +5,8 @@ export const BotAuthor = '953562105339056168';
 export const BotVersion = '1.0.0-beta';
 export const DiscordJSVersion = '14.11.0';
 
+export const NoEmoji = '<:no:1150354772294115358>';
+
 export interface Setting {
     settingId: string,
     settingName: string,

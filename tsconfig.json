@@ -2,11 +2,10 @@
   "compilerOptions": {
     "lib": ["ESNext", "DOM"],
     "module": "ESNext",
-    "moduleResolution": "Node16",
+    "moduleResolution": "Node",
     "outDir": "build",
     "target": "ES2021",
     "allowSyntheticDefaultImports": true,
-    "resolveJsonModule": true,
     "esModuleInterop": true,
 	},
   "include": ["source/"],
