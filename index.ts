@@ -6,7 +6,6 @@ await ClientLogin({
     BotToken: process.env.BOT_TOKEN ?? "",
     CommandsDir: '/commands',
     EventsDir: '/events',
-    EmojiImagesDir: '../resources/Emoji Images',
     ClientOptions: {
         intents: [
             GatewayIntentBits.Guilds

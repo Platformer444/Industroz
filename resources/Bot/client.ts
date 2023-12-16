@@ -4,7 +4,6 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import chalk from "chalk"
 
 import { Client, ClientOptions } from "discord.js";
-import { Events } from "./events.js";
 import { Commands, TransformAPI } from "./commands.js";
 
 export let client: Client = undefined as any;
@@ -14,7 +13,6 @@ export async function ClientLogin(
         BotToken: string,
         CommandsDir: string,
         EventsDir: string,
-        EmojiImagesDir: string,
         ClientOptions: ClientOptions
     }
 ): Promise<Client<true>> {

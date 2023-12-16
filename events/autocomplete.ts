@@ -9,7 +9,7 @@ defineEvent({
     Execute: async (interaction: AutocompleteInteraction) => {
         if (interaction.isAutocomplete()) {
             const FilteredCommand = Commands.filter((Command) => { return Command.Name === interaction.command?.name })[0]
-            if (!FilteredCommand) console.error(`No Command matching the Name ${interaction.command?.name}`);
+            if (!FilteredCommand) return console.error(`No Command matching the Name ${interaction.command?.name}`);
 
             const FilteredOption =
                 FilteredCommand["Options"]?.filter((Option) => { return Option["Name"] === interaction.options.getFocused(true)["name"]; })[0] ??
@@ -21,7 +21,7 @@ defineEvent({
                     ?.filter((SubCommand) => { return SubCommand["Name"] === interaction.options.getSubcommand(true); })[0]["Options"]
                     ?.filter((Option) => { return Option["Name"] === interaction.options.getFocused(true)["name"]; })[0];
 
-            if (!FilteredOption) console.error(`No Option matching the Name ${interaction.options.getFocused(true)["name"]}`);
+            if (!FilteredOption) return console.error(`No Option matching the Name ${interaction.options.getFocused(true)["name"]}`);
 
             if (FilteredOption?.Autocomplete instanceof Function) {
                 const Choices = await FilteredOption.Autocomplete(interaction)

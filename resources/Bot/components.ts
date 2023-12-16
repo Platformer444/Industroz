@@ -1,21 +1,26 @@
-import { ButtonStyle, ChannelType, ComponentType } from "discord.js";
+import { APIBaseComponent, ButtonStyle, ChannelType, ComponentType, TextInputStyle } from "discord.js";
 
 export interface Component {
     ComponentType: keyof typeof ComponentType,
     CustomID?: string,
     Disabled?: boolean,
     Data?: Record<string, any>,
+    
+    Label?: string,
+    Placeholder?: string,
 
     // For Buttons
-    Label?: string,
-    Style?: keyof typeof ButtonStyle,
+    ButtonStyle?: keyof typeof ButtonStyle,
     URL?: string,
     Emoji?: string,
 
     // For SelectMenu
-    Placeholder?: string,
     Options?: SelectMenuOption[],
-    ChannelTypes?: ChannelType[]
+    ChannelTypes?: ChannelType[],
+
+    // For TextInput
+    TextStyle?: keyof typeof TextInputStyle,
+    Required?: boolean
 };
 
 export interface SelectMenuOption {
@@ -25,17 +30,33 @@ export interface SelectMenuOption {
     Default?: boolean
 };
 
-export default function defineComponents(...Components: Component[]) {
+export interface Modal {
+    Title: string,
+    CustomID: string,
+    Components: any,
+    Data?: Record<string, any>
+};
+
+export function defineComponents(...Components: Component[]) {
     return {
         type: 1,
         components: [
             ...(TransformAPI(Components, "Button") ?? []),
-            ...(TransformAPI(Components, "SelectMenu") ?? [])
+            ...(TransformAPI(Components, "SelectMenu") ?? []),
+            ...(TransformAPI(Components, "TextInput") ?? [])
         ]
-    }
+    };
 }
 
-function TransformAPI(Data: Component[], Into: "Button" | "SelectMenu"): any[] | undefined {
+export function defineModal(Modal: Modal) {
+    return {
+        title: Modal["Title"],
+        custom_id: Modal["CustomID"] + '$' + JSON.stringify(Modal["Data"] ?? {}),
+        components: [Modal["Components"]]
+    };
+}
+
+function TransformAPI(Data: Component[], Into: "Button" | "SelectMenu" | "TextInput"): any[] | undefined {
     if (Into === "Button") return Data
         .filter((Component) => { return Component["ComponentType"] === "Button" })
         .map((Component) => {
@@ -46,11 +67,11 @@ function TransformAPI(Data: Component[], Into: "Button" | "SelectMenu"): any[] |
                 emoji: Component["Emoji"] ?? "",
                 url: Component["URL"] ?? "",
                 disabled: Component["Disabled"] ?? false,
-                style: ButtonStyle[Component["Style"] ?? "Primary"],
+                style: ButtonStyle[Component["ButtonStyle"] ?? "Primary"],
             };
         });
     else if (Into === "SelectMenu") return Data
-        .filter((Component) => { return Component["ComponentType"] !== "ActionRow" && Component["ComponentType"] !== "Button" })
+        .filter((Component) => { return Component["ComponentType"] !== "ActionRow" && Component["ComponentType"] !== "Button" && Component["ComponentType"] !== "TextInput" })
         .map((Component) => {
             return {
                 type: ComponentType[Component["ComponentType"]],
@@ -68,6 +89,18 @@ function TransformAPI(Data: Component[], Into: "Button" | "SelectMenu"): any[] |
                     }) : [],
                 channel_types: Component["ComponentType"] === "ChannelSelect" ? Component["ChannelTypes"] : [],
                 disabled: Component["Disabled"]
+            };
+        });
+    else if (Into === "TextInput") return Data
+        .filter((Component) => { return Component["ComponentType"] === "TextInput" })
+        .map((Component) => {
+            return {
+                type: 4,
+                custom_id: Component["CustomID"] + '$' + JSON.stringify(Component["Data"] ?? {}),
+                placeholder: Component["Placeholder"],
+                label: Component["Label"],
+                style: TextInputStyle[Component["TextStyle"] ?? "Short"],
+                required: Component["Required"] ?? false
             };
         });
 }

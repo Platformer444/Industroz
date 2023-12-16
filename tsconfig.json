@@ -7,7 +7,7 @@
 		"outDir": "build",
 		"target": "ES2021",
 		"strict": true,
-		"allowSyntheticDefaultImports": true
+		"allowSyntheticDefaultImports": true,
 	},
 	"exclude": ["node_modules"],
 	"typeAcquisition": { "enable": true }

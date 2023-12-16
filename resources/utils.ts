@@ -1,40 +1,56 @@
-import { APIEmbed, ButtonInteraction, InteractionReplyOptions, InteractionUpdateOptions, StringSelectMenuInteraction, User } from "discord.js";
-import { Items, Tiles } from "./data.js";
-import { WorldDatabase } from "./../commands/world.js";
-import defineComponents, { Component, SelectMenuOption } from "./Bot/components.js";
+import { ButtonInteraction, InteractionReplyOptions, InteractionUpdateOptions, StringSelectMenuInteraction, User, time } from "discord.js";
+import { Biome, Biomes, Items, Tiles } from "./data.js";
+import { World, WorldDatabase } from "./../commands/world.js";
+import { defineComponents, Component, SelectMenuOption } from "./Bot/components.js";
 import defineEvent from "./Bot/events.js";
+import { stripIndent } from "common-tags";
 
-interface NavigationButtonData {
+export interface NavigationButtonData {
     User: string,
     Island: number,
-    Position: [number, number],
-    Explore: boolean,
-    Tile: number
+    Position: [number, number]
 };
 
 class WorldUtil {
-    CreateWorld(Width: number, Height: number): { Tile: number, Component?: number }[][] {
-        const World: { Tile: number, Component?: number }[][] = [];
+    CreateWorld(Width: number, Height: number, DefaultOutpostPosition: [number, number] = [(Height / 2) - 1, (Width / 2) - 1]): World["Islands"][0]["Tiles"] {
+        const World: World["Islands"][0]["Tiles"] = [];
+
+        const _Biomes: Biome[] = [];
+        let BiomeWidth: number = 10;
+        let BiomeHeight: number = 10;
+
+        while (_Biomes["length"] < (Width * Height) / (BiomeWidth * BiomeHeight)) Biomes.forEach((Biome) => {
+            if (BotUtils.RandomNumber(0, 10 - (Biome["SpawningChance"] ?? 10)) === 0) _Biomes.push(Biome);
+        });
 
         for (let i = 0; i < Height; i++) {
-            const WorldChunk: typeof World[0] = [];
+            const WorldChunk: World["Islands"][0]["Tiles"][0] = [];
 
             for (let j = 0; j < Width; j++) {
-                if (j + 1 === 1 || j + 1 === Width) WorldChunk.push({ Tile: 1 });
-                else WorldChunk.push({ Tile: (j % 4) + (j % 4 === 0 ? 1 : 0) + (j % 4 === 3 ? -1 : 0) });
+                const Biome = _Biomes[Math.floor(j / BiomeWidth) + Math.floor(i / BiomeHeight)] ?? { Tiles: [ 2 ] };
+
+                const Tile = Biome["Tiles"].filter((Tile) => {
+                    const _Tile = Tiles.filter((_Tile) => { return _Tile["ID"] === Tile })[0];
+                    return BotUtils.RandomNumber(0, 10 - (_Tile["Spawnable"] ?? 10)) === 0;
+                })[0];
+
+                if (!Tile) WorldChunk.push({ Tile: 2 });
+                else WorldChunk.push({ Tile: Tile });
             }
 
             World.push(WorldChunk);
         }
 
+        World[DefaultOutpostPosition[0]][DefaultOutpostPosition[1]]["Tile"] = 3;
+
         return World;
     }
 
-    RenderWorld(World: { Tile: number, Component?: number }[][], Position: [number, number], FOV: [number, number] = [5, 5]): string {
+    RenderWorld(World: World["Islands"][0]["Tiles"], Position: [number, number], FOV: [number, number] = [5, 5]): string {
         let message = '';
 
-        for (let i = Position[0] - Math.ceil(FOV[0] / 2); i < (Position[0] + Math.ceil(FOV[0] / 2)) - 1; i++) {
-            for (let j = Position[1] - Math.ceil(FOV[1] / 2); j < (Position[1] + Math.ceil(FOV[1] / 2)) - 1; j++) {
+        for (let i = Position[0] - Math.floor(FOV[0] / 2); i < (Position[0] - Math.floor(FOV[0] / 2)) + FOV[0]; i++) {
+            for (let j = Position[1] - Math.floor(FOV[1] / 2); j < (Position[1] - Math.floor(FOV[1] / 2)) + FOV[1]; j++) {
                 let Tile;
 
                 if (!World[i][j]) Tile = Tiles.filter((Tile) => { return Tile["ID"] === 1 })[0];
@@ -53,22 +69,36 @@ class WorldUtil {
             {
                 User: Data["User"],
                 Island: Data["Island"],
-                Position: [Data["Position"][0] + Move[0], Data["Position"][1] + Move[1]],
-                Explore: Data["Explore"],
-                Tile: Data["Tile"]
+                Position: [Data["Position"][0] + Move[0], Data["Position"][1] + Move[1]]
             }
         );
     }
 };
 
 class BotUtil {
+    Plural(Word: string): string {
+        if (Word.endsWith('f')) return `${Word.slice(0, Word["length"] - 1)}ves`;
+        else if (Word.endsWith('o')) return `${Word}es`;
+        else return `${Word}s`;
+    }
+
+    Singular(Word: string): string {
+        if (Word.endsWith('ves')) return `${Word.slice(0, Word["length"] - 3)}f`;
+        else if (Word.endsWith('s')) return Word.slice(0, Word["length"] - 1);
+        else return Word;
+    }
+
+    RandomNumber(Min: number, Max: number): number {
+        return Math.floor(Math.random() * (Max - Min + 1) ) + Min;
+    }
+
     async BuildHomeScreen(User: User, Island: number, Outpost?: number): Promise<InteractionReplyOptions & InteractionUpdateOptions> {
         if (User.bot) return {
             content: 'Bots can not have an Industrial World!',
             ephemeral: true
         };
 
-        const World = await WorldDatabase.Get(User.id);
+        const World = await WorldDatabase.Get(User["id"]);
 
         if (!World) return {
             content: 'Looks like the specified User does not have an Industrial World!',
@@ -76,7 +106,7 @@ class BotUtil {
         };
 
         if(World["Visibility"] === "Private") return {
-            content: 'The Specified User\'s Industrial World is Private',
+            content: 'The Specified User\'s Industrial World is Private!',
             ephemeral: true
         };
 
@@ -99,15 +129,11 @@ class BotUtil {
                         CustomID: 'Explore',
                         Label: 'Explore',
                         Emoji: '🗺️',
-                        Style: "Primary",
+                        ButtonStyle: "Primary",
                         Data: {
                             User: User.id,
                             Island: Island,
-                            Position: World["Islands"][Island - 1]["Outposts"].filter((Outpost) => { return Outpost["Default"] })[0]["Location"],
-                            Explore: true,
-                            Tile: World["Islands"][Island - 1]["Tiles"]
-                                [World["Islands"][Island - 1]["Outposts"][Outpost - 1]["Location"][0]]
-                                [World["Islands"][Island - 1]["Outposts"][Outpost - 1]["Location"][1]]["Tile"]
+                            Position: World["Islands"][Island - 1]["Outposts"][Outpost - 1]["Location"]
                         }
                     },
                     {
@@ -115,7 +141,8 @@ class BotUtil {
                         CustomID: 'GetOfflineEarnings',
                         Label: 'Get Offline Earnings',
                         Emoji: '💵',
-                        Style: "Primary"
+                        ButtonStyle: "Primary",
+                        Data: { Island: Island }
                     }
                 ),
                 defineComponents(
@@ -136,7 +163,8 @@ class BotUtil {
                                 Description: `${(World["Islands"].length + 1) * 100000}`,
                                 Emoji: '➕'
                             }
-                        ]
+                        ],
+                        Data: { User: User["id"] }
                     }
                 ),
                 defineComponents(
@@ -145,13 +173,14 @@ class BotUtil {
                         ComponentType: "StringSelect",
                         CustomID: 'OutpostSelect',
                         Placeholder: 'Select an Outpost...',
-                        Options: World["Islands"][Island - 1]["Outposts"].map((Ouptost, Index) => {
+                        Options: World["Islands"][Island - 1]["Outposts"].map((_Outpost, Index) => {
                             return {
                                 Label: `Outpost ${Index + 1}`,
-                                Default: Ouptost["Default"],
+                                Default: Index + 1 === Outpost,
                                 Emoji: '🔭'
                             }
-                        })
+                        }),
+                        Data: { User: User["id"], Island: Island }
                     }
                 )
             ],
@@ -160,24 +189,7 @@ class BotUtil {
     }
 
     async BuildNavigation(Data: NavigationButtonData): Promise<InteractionReplyOptions & InteractionUpdateOptions> {
-        let BuildInfo: { DisableConfirm: boolean, DisableReason: string } = {
-            DisableConfirm: false,
-            DisableReason: 'Good to Go!'
-        };
-
         const World = await WorldDatabase.Get(Data["User"]);
-
-        if (Data["Explore"]) Data["Tile"] = World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]]["Tile"];
-
-        if (
-            World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]]["Tile"] !==
-            Tiles.filter((Tile) => { return Tile["ID"] === Data["Tile"] })[0]["BuildableOn"]
-        ) BuildInfo = {
-            DisableConfirm: true,
-            DisableReason: 'Invalid Tile!'
-        };
-
-        World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]]["Tile"] = Data["Tile"];
 
         const Directions: { Direction: string, Emoji: string }[][] = [
             [
@@ -203,30 +215,30 @@ class BotUtil {
                 Data["Position"]
             ),
             components: [
-                Data["Explore"] ? defineComponents(
+                defineComponents(
+                    {
+                        ComponentType: "Button",
+                        CustomID: 'TileInfo',
+                        Emoji: Tiles.filter((Tile) => { return Tile["ID"] === World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]]["Tile"] })[0]["Emoji"],
+                        ButtonStyle: "Primary",
+                        Data: Data
+                    },
                     {
                         ComponentType: "Button",
                         CustomID: 'Build',
                         Label: "Build",
                         Emoji: '🛠️',
-                        Style: "Primary",
+                        ButtonStyle: "Primary",
                         Data: Data
                     },
                     {
                         ComponentType: "Button",
                         CustomID: 'ItemUse',
                         Label: 'Use Item',
-                        Style: "Primary"
-                    }
-                ) : defineComponents(
-                    {
-                        ComponentType: "Button",
-                        Label: BuildInfo["DisableReason"],
-                        Disabled: true,
-                        Style: "Primary"
+                        ButtonStyle: "Primary",
+                        Data: Data
                     }
                 ),
-
                 ...Directions.map((Directions) => {
                     return defineComponents(
                         ...Directions.map((Direction): Component => {
@@ -235,7 +247,7 @@ class BotUtil {
                                 CustomID: 'Nav',
                                 Emoji: Direction["Emoji"],
                                 Disabled: Direction["Direction"] === "N",
-                                Style: "Secondary",
+                                ButtonStyle: "Secondary",
                                 Data: {
                                     To: Direction["Direction"],
                                     ...Data
@@ -250,7 +262,7 @@ class BotUtil {
                         CustomID: 'Home',
                         Label: 'Home',
                         Emoji: '🏡',
-                        Style: "Secondary",
+                        ButtonStyle: "Secondary",
                         Data: Data
                     }
                 )
@@ -334,7 +346,7 @@ class BotUtil {
                         CustomID: `${Options["EmbedTitle"]}Paginate`,
                         Label: '<< Previous',
                         Disabled: false,
-                        Style: "Primary",
+                        ButtonStyle: "Primary",
                         Data: { Page: Options["Page"] - 1 }
                     },
                     {
@@ -342,7 +354,7 @@ class BotUtil {
                         CustomID: `${Options["EmbedTitle"]}Paginate`,
                         Label: 'Next >>',
                         Disabled: List.length < Options["Page"] * 25,
-                        Style: "Primary",
+                        ButtonStyle: "Primary",
                         Data: { Page: Options["Page"] + 1 }
                     }
                 )
@@ -350,14 +362,20 @@ class BotUtil {
         };
     }
 
-    BuildInvenotryItemEmbed(Item: number, Quantity: number): InteractionReplyOptions & InteractionUpdateOptions {
+    BuildInventoryItemEmbed(Item: number, Quantity: number): InteractionReplyOptions & InteractionUpdateOptions {
         const item = Items.filter((item) => { return item["ID"] === Item })[0];
 
         return {
             embeds: [
                 {
-                    title: `${item["Emoji"]} ${item["Name"]} (x${Quantity})`,
-                    description: item["Description"]
+                    title: `${item["Emoji"]} ${Quantity > 1 ? BotUtils.Plural(item["Name"]) : item["Name"]} (×${Quantity})`,
+                    description: item["Description"],
+                    footer: {
+                        text: stripIndent`
+                            ${!item["BuyingDetails"] ? 'Can\'t be Bought!' : this.DisplayItemCost(Item, "Buy")}
+                            ${!item["SellDetails"] ? 'Can\'t be Sold!' : this.DisplayItemCost(Item, "Sell")}
+                        `
+                    }
                 }
             ],
             
@@ -365,12 +383,157 @@ class BotUtil {
                 defineComponents(
                     {
                         ComponentType: "Button",
+                        CustomID: 'Buy',
+                        Label: 'Buy',
+                        Disabled: !item["BuyingDetails"],
+                        ButtonStyle: "Primary",
+                        Data: { Item: Item }
+                    },
+                    {
+                        ComponentType: "Button",
+                        CustomID: 'Sell',
+                        Label: 'Sell',
+                        Disabled: !item['SellDetails'],
+                        ButtonStyle: "Primary",
+                        Data: { Item: Item }
+                    }
+                ),
+                defineComponents(
+                    {
+                        ComponentType: "Button",
                         CustomID: 'Inventory',
                         Label: 'Back to Inventory',
-                        Style: "Secondary"
+                        ButtonStyle: "Secondary"
                     }
                 )
-            ]
+            ],
+        };
+    }
+
+    EditInventory(InventoryList: World["Inventory"], Item: number, AddorRemove: "Add" | "Remove", Quantity: number): World["Inventory"] {
+        const NewInventory: World["Inventory"] = [];
+        let Done: boolean = false;
+
+        InventoryList.forEach((InventoryItem, Index) => {
+            if (InventoryItem["Item"] === Item) {
+                Done = true;
+                
+                if (AddorRemove === "Add") NewInventory.push({ Item: Item, Quantity: InventoryItem["Quantity"] + Quantity });
+                else {
+                    if (InventoryItem["Quantity"] - Quantity === 0) InventoryList.splice(Index, 1);
+                    else if (InventoryItem["Quantity"] - Quantity < 0) Done = false;
+                    else NewInventory.push({ Item: Item, Quantity: InventoryItem["Quantity"] - Quantity });
+                }
+            } else NewInventory.push(InventoryItem);
+        });
+
+        if (!Done) {
+            if (AddorRemove === "Add") NewInventory.push({ Item: Item, Quantity: Quantity });
+            else return [];
+        }
+
+        return NewInventory;
+    }
+
+    async DestroyTile(interaction: StringSelectMenuInteraction, Data: NavigationButtonData, Tool: "Axe" | "Pickaxe") {
+        const AxeBreakableBlocks = [ 6, 7 ];
+        const PickaxeBreakableBlocks = [ 6, 7 ];
+        const World = await WorldDatabase.Get(Data["User"]);
+        const CurrentTile = World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]]["Tile"];
+
+        if ((Tool === "Axe" ? AxeBreakableBlocks : PickaxeBreakableBlocks).includes(CurrentTile as number)) {
+            const Tile = Tiles.filter((Tile) => { return Tile["ID"] === CurrentTile })[0];
+
+            World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]]["Tile"] = Tile["DestroyReplace"] ?? 2;
+
+            Tile["DestroyGive"]?.forEach((Item) => { World["Inventory"] = BotUtils.EditInventory(World["Inventory"], Item["Item"], "Add", Item["Quantity"]); });
+
+            await WorldDatabase.Set(Data["User"], World);
+            await interaction.update(await BotUtils.BuildNavigation(Data));
+        }
+        else await interaction.reply({
+            content: `${Tool} can't be used on that Tile!`,
+            ephemeral: true
+        });
+    }
+
+    BuildShopItemEmbed(Item: number): InteractionReplyOptions & InteractionUpdateOptions {
+        const item = Items.filter((item) => { return item["ID"] === Item })[0];
+
+        return {
+            embeds: [
+                {
+                    title: `${item["Emoji"]} ${item["Name"]}`,
+                    description: item["Description"],
+                    footer: {
+                        text: this.DisplayItemCost(Item, "Buy")
+                    }
+                }
+            ],
+            
+            components: [
+                defineComponents(
+                    {
+                        ComponentType: "Button",
+                        CustomID: 'Buy',
+                        Label: 'Buy',
+                        Disabled: !item["BuyingDetails"],
+                        ButtonStyle: "Primary",
+                        Data: { Item: Item }
+                    }
+                )
+            ],
+        };
+    }
+
+    DisplayItemCost(Item: number, Detail: "Sell" | "Buy"): string {
+        const item = Items.filter((item) => { return item["ID"] === Item })[0];
+
+        return stripIndent`
+            ${
+                item[Detail === "Sell" ? "SellDetails" : "BuyingDetails"]?.map((Detail) => {
+                    const DetailItem = Items.filter((DetailItem) => { return DetailItem["ID"] === Detail["Item"]; })[0];
+
+                    return `${DetailItem["Name"]} ×${Detail["Quantity"]}`
+                }).join(' ')
+            } → ${item["Name"]} ×1
+        `;
+    }
+
+    BuildTileInfoEmbed(Tile: number, ComponentData: World["Islands"][0]["Tiles"][0][0]["Component"]): InteractionReplyOptions & InteractionUpdateOptions {
+        const _Tile = Tiles.filter((tile) => { return tile["ID"] === Tile })[0];
+
+        return {
+            embeds: [
+                {
+                    title: _Tile["Emoji"] + " " + _Tile["Name"],
+                    description: `**${_Tile["Description"]}**`,
+                    fields: ComponentData ? [
+                        { name: 'Level', value: String(ComponentData["Level"]), inline: true },
+                        { name: 'Workers', value: String(ComponentData["Workers"]), inline: true },
+                        { name: 'Last Salary Pay', value: String(time(Math.floor(ComponentData["LastSalaryPay"] / 1000), "F")), inline: true },
+
+                        { name: 'Production', value: 'Lol' }
+                    ] : undefined
+                }
+            ],
+
+            components: ComponentData ? [
+                defineComponents(
+                    {
+                        ComponentType: "Button",
+                        CustomID: 'Upgrade',
+                        Label: 'Upgrade',
+                        ButtonStyle: "Primary"
+                    },
+                    {
+                        ComponentType: "Button",
+                        CustomID: 'Salary',
+                        Label: 'Pay Salary',
+                        ButtonStyle: "Primary"
+                    }
+                )
+            ] : undefined
         };
     }
 }

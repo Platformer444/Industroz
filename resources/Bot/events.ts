@@ -12,7 +12,7 @@ interface Event {
 export const Events: Event[] = []
 
 export default function defineEvent(Event: Event) {
-    if (!Events.includes(Event)) {
+    if (!(Events.filter((event) => { return event["Name"] === Event["Name"] })[0])) {
         Events.push(Event);
         console.log(chalk.blueBright(`\tEvent ${chalk.cyanBright(Event["Name"])} Defined!\n`));
 

@@ -1,4 +1,4 @@
-import defineComponents from "../resources/Bot/components.js";
+import { defineComponents } from "../resources/Bot/components.js";
 import defineCommand from "../resources/Bot/commands.js";
 import DataBase from "./../resources/database.js";
 import { BotUtils } from "./../resources/utils.js";
@@ -8,7 +8,12 @@ export interface World {
         ID: number,
         Tiles: {
             Tile: number,
-            Component?: number
+            Component?: {
+                Level: number,
+                Workers: number,
+                LastSalaryPay: number,
+                Hoarding: { Item: number, Quantity: number }[]
+            }
         }[][],
         Outposts: {
             Location: [number, number],
@@ -16,8 +21,8 @@ export interface World {
         }[]
     }[],
     Inventory: {
-        Item: Number,
-        Quantity: Number
+        Item: number,
+        Quantity: number
     }[],
     LastOnlineTime: number,
     Visibility: "Public" | "Private"
@@ -25,7 +30,7 @@ export interface World {
 
 export const WorldDatabase: DataBase<World> = new DataBase("World");
 
-await defineCommand({
+defineCommand({
     Name: 'world',
     Description: 'Manage Your Industrial World',
     SubCommands: [
@@ -38,9 +43,7 @@ await defineCommand({
                     Name: 'island',
                     Description: 'The Island which is to be Viewed',
                     Autocomplete: async (interaction) => {
-                        return [
-                            ...((await WorldDatabase.Get(interaction.user.id))["Islands"].map((Island) => { return String(Island["ID"]) }))
-                        ];
+                        return (await WorldDatabase.Get(interaction.user.id))["Islands"].map((Island) => { return String(Island["ID"]) });
                     }
                 },
                 {
@@ -80,13 +83,13 @@ await defineCommand({
                                 ComponentType: "Button",
                                 CustomID: 'WorldCreateCancel',
                                 Label: 'Cancel',
-                                Style: "Danger"
+                                ButtonStyle: "Danger"
                             },
                             {
                                 ComponentType: "Button",
                                 CustomID: `WorldCreateConfirm`,
                                 Label: 'Confirm',
-                                Style: "Primary",
+                                ButtonStyle: "Primary",
                                 Data: {
                                     WorldExists: WorldDatabase.Get(interaction.user.id) !== undefined,
                                     Visibility: interaction.options.getString('visibility')

@@ -37,7 +37,7 @@ interface CommandOption {
 
 export const Commands: Command[] = []
 
-export default async function defineCommand(Command: Command) {
+export default function defineCommand(Command: Command) {
     Commands.push(Command);
     console.log(chalk.blue(`\tCommand ${chalk.bold(chalk.greenBright(Command["Name"]))} Defined!\n`));
 }
