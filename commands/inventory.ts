@@ -1,8 +1,9 @@
+import { BaseInteraction } from "discord.js";
+
 import { Items } from "./../resources/data.js";
 import defineCommand from "../resources/Bot/commands.js";
 import { BotUtils } from "./../resources/utils.js";
 import { World, WorldDatabase } from "./world.js";
-import { BaseInteraction } from "discord.js";
 
 export default function InventoryList(interaction: BaseInteraction, Inventory: World["Inventory"]) {
     return BotUtils.BuildListEmbed<World["Inventory"][0]>(
@@ -20,10 +21,10 @@ export default function InventoryList(interaction: BaseInteraction, Inventory: W
         },
         async (interaction) => {
             const Item = Items.filter((Item) => { return Item["Name"].replaceAll(' ', '_').toLowerCase() === BotUtils.Singular(interaction["values"][0].split('(')[0]) })[0];
-            return await interaction.update(BotUtils.BuildInventoryItemEmbed(Item["ID"], parseInt(interaction["values"][0].split('(')[1].replace('×', '').replace(')', ''))));
+            return await interaction.update(await BotUtils.BuildInventoryItemEmbed(interaction["user"]["id"], Item["ID"], parseInt(interaction["values"][0].split('(')[1].replace('×', '').replace(')', ''))));
         },
         {
-            EmbedTitle: `${interaction.user.displayName}'s Inventory`,
+            Title: `${interaction["user"]["username"]}'s Inventory`,
             Page: 1
         }
     )
@@ -63,7 +64,7 @@ defineCommand({
         }
         else {
             const item = Items.filter((item) => { return item["Name"] === BotUtils.Singular((Item as string).split(' ')[0]) })[0];
-            return await interaction.reply(BotUtils.BuildInventoryItemEmbed(item["ID"], parseInt(Item.split('(')[1].replace('×', '').replace(')', ''))));
+            return await interaction.reply(await BotUtils.BuildInventoryItemEmbed(interaction["user"]["id"], item["ID"], parseInt(Item.split('(')[1].replace('×', '').replace(')', ''))));
         }
     }
 });

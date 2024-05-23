@@ -25,6 +25,7 @@ export interface Component {
 
 export interface SelectMenuOption {
     Label: string,
+    Value?: string,
     Description?: string,
     Emoji?: string,
     Default?: boolean
@@ -62,10 +63,10 @@ function TransformAPI(Data: Component[], Into: "Button" | "SelectMenu" | "TextIn
         .map((Component) => {
             return {
                 type: 2,
-                custom_id: Component["CustomID"] + '$' + JSON.stringify(Component["Data"] ?? {}) ?? "",
-                label: Component["Label"] ?? "",
-                emoji: Component["Emoji"] ?? "",
-                url: Component["URL"] ?? "",
+                custom_id: Component["CustomID"] + '$' + JSON.stringify(Component["Data"] ?? {}),
+                label: Component["Label"],
+                emoji: Component["Emoji"],
+                url: Component["URL"],
                 disabled: Component["Disabled"] ?? false,
                 style: ButtonStyle[Component["ButtonStyle"] ?? "Primary"],
             };
@@ -81,9 +82,9 @@ function TransformAPI(Data: Component[], Into: "Button" | "SelectMenu" | "TextIn
                     Component["Options"]?.map((Option) => {
                         return {
                             label: Option["Label"],
-                            value: Option["Label"].replaceAll(' ', '_').toLowerCase(),
-                            description: Option["Description"] ?? '',
-                            emoji: Option["Emoji"] ?? '',
+                            value: Option["Value"] ?? Option["Label"].replaceAll(' ', '_').toLowerCase(),
+                            description: Option["Description"],
+                            emoji: Option["Emoji"],
                             default: Option["Default"] ?? false
                         }
                     }) : [],

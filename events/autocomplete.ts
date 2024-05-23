@@ -1,4 +1,5 @@
 import { AutocompleteInteraction } from "discord.js";
+
 import defineEvent from "../resources/Bot/events.js";
 import { Commands } from "../resources/Bot/commands.js";
 

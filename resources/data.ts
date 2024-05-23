@@ -1,7 +1,9 @@
 import { StringSelectMenuInteraction } from "discord.js";
-import { BotUtils, NavigationButtonData } from "./utils.js";
 
-type ItemQuantityPair = { Item: number, Quantity: number };
+import { BotUtils, NavigationButtonData } from "./utils.js";
+import { Settings } from "commands/settings.js";
+
+export type ItemQuantityPair = { Item: number, Quantity: number };
 
 export interface Tile {
     ID: number,
@@ -14,6 +16,7 @@ export interface Tile {
     BuyingDetails?: ItemQuantityPair[],
     DestroyReplace?: number,
     DestroyGive?: ItemQuantityPair[],
+    Salary?: ItemQuantityPair[],
     Production?: number[]
 };
 
@@ -38,14 +41,14 @@ export const Tiles: Tile[] = [
     {
         ID: 1,
         Name: 'Water',
-        Description: 'An Pool of a Covalent Chemical Compound formed when Two Atoms of Hydrogen and One Atom of Oxygen share their Electrons',
+        Description: 'A Pool of a Covalent Chemical Compound formed when Two Atoms of Hydrogen and One Atom of Oxygen share their Electrons',
         Emoji: '<:Water:1178629196822622289>',
         Spawnable: 7
     },
     {
         ID: 2,
         Name: 'Land',
-        Description: 'Just a Piece of 124×124 Pixels Big Piece of just Grass... Just Grass... (Mooooo... Bahhhh.... Don\'t let Your Livestock come Here! I made a Mistake you See)',
+        Description: 'Just a Piece of 124×124 Pixels Big Piece of Just Grass... Just Grass... (Mooooo... Bahhhh.... Don\'t let Your Livestock come Here! I made a Mistake You See)',
         Emoji: '<:Land1111:1170322862276608100>',
         Spawnable: 10
     },
@@ -54,46 +57,57 @@ export const Tiles: Tile[] = [
         Name: 'Outpost',
         Description: '',
         Emoji: '<:Outpost:1182330497288900728>',
-        Buildable: true
+        Buildable: true,
+        BuildableOn: 2
     },
     {
         ID: 4,
+        Name: 'Shop',
+        Description: '',
+        Emoji: '<:Land1111:1170322862276608100>',
+        Buildable: true,
+        BuildableOn: 2,
+        DestroyReplace: 2,
+        BuyingDetails: [
+            { Item: 1, Quantity: 100 }
+        ],
+        Salary: [
+            { Item: 1, Quantity: 10 }
+        ]
+    },
+    {
+        ID: 5,
         Name: 'Trees',
         Description: '',
         Emoji: '<:Land1111Trees:1170322946213036052>',
         Spawnable: 9,
         DestroyReplace: 2,
         DestroyGive: [
-            {
-                Item: 1,
-                Quantity: 2
-            }
+            { Item: 4, Quantity: 2 }
         ]
     },
     {
-        ID: 5,
+        ID: 6,
         Name: 'WoodCutter Hut',
         Description: '',
         Emoji: '<:Land1111WoodcutterHut:1170322950201815091>',
         Buildable: true,
-        BuildableOn: 4,
+        BuildableOn: 5,
         BuyingDetails: [
-            {
-                Item: 1,
-                Quantity: 5
-            }
+            { Item: 1, Quantity: 5 },
+            { Item: 4, Quantity: 5 }
         ],
         DestroyReplace: 4,
         DestroyGive: [
-            {
-                Item: 1,
-                Quantity: 2
-            }
+            { Item: 1,  Quantity: 2 }
+        ],
+        Salary: [
+            { Item: 1, Quantity: 5 }
         ],
         Production: [ 4 ]
     },
     {
-        ID: 6,
+        ID: 7,
         Name: 'Stone',
         Description: '',
         Emoji: '<:Land1111Stone:1170322935794372608>',
@@ -101,7 +115,7 @@ export const Tiles: Tile[] = [
         DestroyReplace: 2
     },
     {
-        ID: 7,
+        ID: 8,
         Name: 'Coal',
         Description: '',
         Emoji: '<:Land1111Coal:1170322867473350686>',
@@ -114,13 +128,13 @@ export const Biomes: Biome[] = [
     {
         ID: 1,
         Name: 'Forest',
-        Tiles: [ 1, 4 ],
+        Tiles: [ 1, 5 ],
         SpawningChance: 9
     },
     {
         ID: 2,
         Name: 'Stony Fields',
-        Tiles: [ 6, 7 ],
+        Tiles: [ 7, 8 ],
         SpawningChance: 8
     }
 ];
@@ -130,7 +144,10 @@ export const Items: Item[] = [
         ID: 1,
         Name: 'Coin',
         Description: 'A Shiny, Golden and Circular In-Game Currency for Industroz.',
-        Emoji: '🪙'
+        Emoji: '🪙',
+        Usable: async (interaction, Data) => {
+            await interaction.reply(await BotUtils.PaySalary(Data));
+        }
     },
     {
         ID: 2,
@@ -138,24 +155,50 @@ export const Items: Item[] = [
         Description: 'A Sharp Piece of Metal attached to a Wooden Stick used to Destroy Wooden Things.',
         Emoji: '🪓',
         BuyingDetails: [
-            {
-                Item: 1,
-                Quantity: 1
-            }
+            { Item: 1, Quantity: 1 }
         ],
-        Usable: async (interaction, Data) => { await BotUtils.DestroyTile(interaction, Data, "Axe"); }
+        SellDetails: [
+            { Item: 1, Quantity: 2 }
+        ],
+        Usable: async (interaction, Data) => {
+            const Reply = await BotUtils.DestroyTile(Data, "Axe", interaction.user);
+            if (Reply[0] === "Reply") await interaction.reply(Reply[1]);
+            else if (Reply[0] === "Update") await interaction.update(Reply[1]);
+        }
     },
     {
         ID: 3,
         Name: 'Pickaxe',
         Description: 'A Hard Piece of Metal attached to a Wooden Stick used to Destroy Stone-Like Materials.',
         Emoji: '⛏️',
-        Usable: async (interaction, Data) => { await BotUtils.DestroyTile(interaction, Data, "Pickaxe"); }
+        Usable: async (interaction, Data) => {
+            const Reply = await BotUtils.DestroyTile(Data, "Pickaxe", interaction.user);
+            if (Reply[0] === "Reply") await interaction.reply(Reply[1]);
+            else if (Reply[0] === "Update") await interaction.update(Reply[1]);
+        }
     },
     {
         ID: 4,
         Name: 'Wood',
         Description: 'A Long and Thick Piece of Material obtained by Destroying Trees.',
         Emoji: '🪵'
+    }
+];
+
+export interface Setting {
+    Name: keyof Settings,
+    Description: string,
+    Emoji: string,
+    Type: "Custom" | "Choice",
+    Choices?: string[]
+}
+
+export const SETTINGS: Setting[] = [
+    {
+        Name: 'Visibility',
+        Description: 'Makes your Industrial World either Visible to Others to view (Public) or the opposite (Private)',
+        Emoji: '👀',
+        Type: "Custom",
+        Choices: ["Public", "Private"]
     }
 ];

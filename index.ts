@@ -1,6 +1,8 @@
-import { ClientLogin } from "./resources/Bot/client.js";
-import "dotenv/config";
 import { ActivityType, GatewayIntentBits } from "discord.js";
+
+import { ClientLogin } from "./resources/Bot/client.js";
+
+import "dotenv/config";
 
 await ClientLogin({
     BotToken: process.env.BOT_TOKEN ?? "",
@@ -13,8 +15,8 @@ await ClientLogin({
         presence: {
             status: "online",
             activities: [{
-                name: "/world view",
-                type: ActivityType.Playing
+                name: "Making Ever-Growing Industries!",
+                type: ActivityType.Custom
             }]
         }
     }

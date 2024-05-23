@@ -18,14 +18,18 @@ export interface World {
         Outposts: {
             Location: [number, number],
             Default: boolean
-        }[]
+        }[],
+        Shop: {
+            Items: { Item: number, Quantity: number }[],
+            RestockNum: number,
+            LastRestockTime: number
+        }
     }[],
     Inventory: {
         Item: number,
         Quantity: number
     }[],
-    LastOnlineTime: number,
-    Visibility: "Public" | "Private"
+    LastOnlineTime: number
 };
 
 export const WorldDatabase: DataBase<World> = new DataBase("World");
@@ -43,7 +47,10 @@ defineCommand({
                     Name: 'island',
                     Description: 'The Island which is to be Viewed',
                     Autocomplete: async (interaction) => {
-                        return (await WorldDatabase.Get(interaction.user.id))["Islands"].map((Island) => { return String(Island["ID"]) });
+                        const World = await WorldDatabase.Get(interaction.user.id);
+                        
+                        if (World) return World["Islands"].map((Island) => { return String(Island["ID"]) });
+                        else return ['You don\'t have Any Industrial World!'];
                     }
                 },
                 {
@@ -99,10 +106,10 @@ defineCommand({
                     ]
                 });
             case "view":
-                let Island = interaction.options.getInteger('island') ?? 1;
+                const Island = interaction.options.getInteger('island') ?? 1;
                 const User = interaction.options.getUser('user') ?? interaction.user;
 
-                return await interaction.reply(await BotUtils.BuildHomeScreen(User, Island))
+                return await interaction.reply(await BotUtils.BuildHomeScreen(User, interaction.user, Island))
         }
     }
 });
