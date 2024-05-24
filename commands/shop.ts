@@ -1,9 +1,10 @@
 import { time } from "discord.js";
 
-import { BotUtils } from "./../resources/utils.js";
+import { BotUtils } from "../resources/Utilities.js";
 import defineCommand from "./../resources/Bot/commands.js";
 import { Item, Items } from "./../resources/data.js";
 import { WorldDatabase } from "./world.js";
+import { SettingsDatabase } from "./settings.js";
 
 defineCommand({
     Name: 'shop',
@@ -23,17 +24,19 @@ defineCommand({
         }
     ],
     Execute: async (interaction) => {
-        const Island = parseInt(interaction["options"].getString('island') ?? "");
+        const Island = parseInt(interaction.options.getString('island') ?? "");
         if (isNaN(Island)) return await interaction.reply({
             content: `You Don't Have an Industrial World!`,
             ephemeral: true
         });
 
-        const World = await WorldDatabase.Get(interaction["user"]["id"]);
+        const World = await WorldDatabase.Get(interaction.user.id);
         if (Island > World["Islands"]["length"]) return await interaction.reply({
             content: `You don't have an Island with the ID ${Island}!`,
             ephemeral: true
         });
+
+        const Settings = await SettingsDatabase.Get(interaction.user.id);
 
         let Message = ``;
         if (((Date.now() - World["Islands"][Island - 1]["Shop"]["LastRestockTime"]) / (1000 * 60 * 60 * 24)) >= 1) {
@@ -59,7 +62,7 @@ defineCommand({
 
             if (RestockNum > 0) World["Islands"][Island - 1]["Shop"]["LastRestockTime"] = Date.now();
 
-            await WorldDatabase.Set(interaction["user"]["id"], World);
+            await WorldDatabase.Set(interaction.user.id, World);
         }
 
         const BuyableItems = Items.filter((Item) => {
@@ -88,14 +91,14 @@ defineCommand({
                 async (interaction) => {
                     await interaction.reply(
                         await BotUtils.BuildShopItemEmbed(
-                            interaction["user"]["id"],
+                            interaction.user.id,
                             Island,
-                            Items.filter((Item) => { return Item["Name"].replaceAll(' ', '_').toLowerCase() === interaction["values"][0] })[0]["ID"]
+                            Items.filter((Item) => { return Item["Name"].replaceAll(' ', '_').toLowerCase() === interaction.values[0] })[0]["ID"]
                         )
                     );
                 },
                 {
-                    Title: `${interaction["user"]["username"]}'s Shop`,
+                    Title: `${Settings["DisplayName"]}'s Shop`,
                     Page: 1
                 }
             );

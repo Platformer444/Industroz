@@ -1,7 +1,7 @@
 import { defineComponents } from "../resources/Bot/components.js";
 import defineCommand from "../resources/Bot/commands.js";
 import DataBase from "./../resources/database.js";
-import { BotUtils } from "./../resources/utils.js";
+import { BotUtils } from "../resources/Utilities.js";
 
 export interface World {
     Islands: {

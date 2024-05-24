@@ -1,6 +1,6 @@
 import { StringSelectMenuInteraction } from "discord.js";
 
-import { BotUtils, NavigationButtonData } from "./utils.js";
+import { BotUtils, NavigationButtonData, WorldUtils } from "./Utilities.js";
 import { Settings } from "commands/settings.js";
 
 export type ItemQuantityPair = { Item: number, Quantity: number };
@@ -146,7 +146,7 @@ export const Items: Item[] = [
         Description: 'A Shiny, Golden and Circular In-Game Currency for Industroz.',
         Emoji: '🪙',
         Usable: async (interaction, Data) => {
-            await interaction.reply(await BotUtils.PaySalary(Data));
+            await interaction.reply(await WorldUtils.PaySalary(Data));
         }
     },
     {
@@ -161,7 +161,7 @@ export const Items: Item[] = [
             { Item: 1, Quantity: 2 }
         ],
         Usable: async (interaction, Data) => {
-            const Reply = await BotUtils.DestroyTile(Data, "Axe", interaction.user);
+            const Reply = await WorldUtils.DestroyTile(Data, interaction.user, "Axe");
             if (Reply[0] === "Reply") await interaction.reply(Reply[1]);
             else if (Reply[0] === "Update") await interaction.update(Reply[1]);
         }
@@ -172,7 +172,7 @@ export const Items: Item[] = [
         Description: 'A Hard Piece of Metal attached to a Wooden Stick used to Destroy Stone-Like Materials.',
         Emoji: '⛏️',
         Usable: async (interaction, Data) => {
-            const Reply = await BotUtils.DestroyTile(Data, "Pickaxe", interaction.user);
+            const Reply = await WorldUtils.DestroyTile(Data, interaction.user, "Pickaxe");
             if (Reply[0] === "Reply") await interaction.reply(Reply[1]);
             else if (Reply[0] === "Update") await interaction.update(Reply[1]);
         }
@@ -196,9 +196,15 @@ export interface Setting {
 export const SETTINGS: Setting[] = [
     {
         Name: 'Visibility',
-        Description: 'Makes your Industrial World either Visible to Others to view (Public) or the opposite (Private)',
+        Description: 'Makes your Industrial World either Visible (Public) or Hidden (Private) to Others',
         Emoji: '👀',
-        Type: "Custom",
-        Choices: ["Public", "Private"]
+        Type: "Choice",
+        Choices: ["Public", "Private"],
+    },
+    {
+        Name: 'DisplayName',
+        Description: 'Changes your Industroz Display Name that shows up in Embeds',
+        Emoji: '🪪',
+        Type: "Custom"
     }
 ];

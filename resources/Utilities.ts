@@ -2,16 +2,17 @@ import { ButtonInteraction, InteractionReplyOptions, InteractionUpdateOptions, S
 import { stripIndent } from "common-tags";
 
 import { Biome, Biomes, Item, Items, SETTINGS, Tiles } from "./data.js";
-import { World, WorldDatabase } from "./../commands/world.js";
+import { World, WorldDatabase } from "../commands/world.js";
 import { defineComponents, Component, SelectMenuOption } from "./Bot/components.js";
 import defineEvent from "./Bot/events.js";
-import { Settings, SettingsDatabase } from "./../commands/settings.js";
+import { Settings, SettingsDatabase } from "../commands/settings.js";
 
 export interface NavigationButtonData {
     User: string,
     Island: number,
     Position: [number, number]
 };
+type InteractionResponse = InteractionReplyOptions & InteractionUpdateOptions;
 
 class WorldUtil {
     CreateWorld(Width: number, Height: number, DefaultOutpostPosition: [number, number] = [(Height / 2) - 1, (Width / 2) - 1]): World["Islands"][0]["Tiles"] {
@@ -66,7 +67,7 @@ class WorldUtil {
         return message;
     }
 
-    async NavigateWorld(Data: NavigationButtonData, Move: [number, number], Interactor: User): Promise<InteractionReplyOptions & InteractionUpdateOptions> {
+    async NavigateWorld(Data: NavigationButtonData, Interactor: User, Move: [number, number]): Promise<InteractionResponse> {
         return await BotUtils.BuildNavigation(
             {
                 User: Data["User"],
@@ -75,6 +76,132 @@ class WorldUtil {
             },
             Interactor
         );
+    }
+
+    async DestroyTile(Data: NavigationButtonData, Interactor: User, Tool: "Axe" | "Pickaxe"): Promise<["Reply" | "Update", InteractionResponse]> {
+        const AxeBreakableBlocks = [ 5, 6 ];
+        const PickaxeBreakableBlocks = [ 7, 8 ];
+        const World = await WorldDatabase.Get(Data["User"]);
+        const CurrentTile = World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]]["Tile"];
+
+        if ((Tool === "Axe" ? AxeBreakableBlocks : PickaxeBreakableBlocks).includes(CurrentTile as number)) {
+            const Tile = Tiles.filter((Tile) => { return Tile["ID"] === CurrentTile })[0];
+
+            World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]] = { Tile: Tile["DestroyReplace"] ?? 2 };
+
+            Tile["DestroyGive"]?.forEach((Item) => { World["Inventory"] = BotUtils.EditInventory(World["Inventory"], Item["Item"], "Add", Item["Quantity"]); });
+
+            await WorldDatabase.Set(Data["User"], World);
+            return ["Update", await BotUtils.BuildNavigation(Data, Interactor)];
+        }
+        else return ["Reply", {
+            content: `${Tool} can't be used on that Tile!`,
+            ephemeral: true
+        }];
+    }
+
+    async PaySalary(Data: NavigationButtonData): Promise<InteractionResponse> {
+        const World = await WorldDatabase.Get(Data["User"]);
+                
+        const Tile = World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]];
+        const _Tile = Tiles.filter((_Tile) => { return _Tile["ID"] === Tile["Tile"] })[0];
+
+        if (!Tile["Component"]) return {
+            content: `You can't Pay Salary to this Tile!`,
+            ephemeral: true
+        };
+
+        const TimePassed = Math.floor((Date.now() - (Tile["Component"]["LastSalaryPay"])) / (1000 * 60 * 60 * 24));
+        if (TimePassed === 0) return {
+            content: `You can Pay Salary only Once per Day!`,
+            ephemeral: true
+        };
+
+        const NewInventory: World["Inventory"] = World["Inventory"];
+        let Done = false;
+        _Tile["Salary"]?.forEach((SalaryItem) => {
+            const Temp = BotUtils.EditInventory(World["Inventory"], SalaryItem["Item"], "Remove", SalaryItem["Quantity"] * TimePassed * (Tile["Component"]?.Workers as number))
+        
+            if (Temp["length"] === 0) {
+                Done = false;
+                return;
+            }
+            else {
+                Temp.forEach((InvItem) => {
+                    NewInventory.forEach((NewInvItem) => {
+                        if (NewInvItem["Item"] === InvItem["Item"]) NewInvItem["Quantity"] = InvItem["Quantity"];
+                    });
+                });
+                Done = true;
+            }
+        });
+
+        if (Done) {
+            World["Inventory"] = NewInventory;
+
+            Tile["Component"]["Hoarding"].forEach((HoardedStock) => {
+                World["Inventory"] = BotUtils.EditInventory(
+                    World["Inventory"],
+                    HoardedStock["Item"],
+                    "Add",
+                    (HoardedStock["Quantity"] - TimePassed) > 0 ? HoardedStock["Quantity"] - TimePassed : 0
+                );
+            });
+
+            World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]]["Component"] = {
+                ...Tile["Component"],
+                LastSalaryPay: Date.now(),
+                Hoarding: []
+            };
+
+            await WorldDatabase.Set(Data["User"], World);
+
+            return {
+                content: `Salary for ${_Tile["Emoji"]}${_Tile["Name"]}'s ${Tile["Component"]?.Workers} Workers was Paid Successfully!`,
+                ephemeral: true
+            };
+        } else {
+            return {};
+        }
+    }
+
+    async UpgradeBuildable(Data: NavigationButtonData): Promise<InteractionResponse> {
+        const World = await WorldDatabase.Get(Data["User"]);
+
+        const Tile = World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]];
+        const _Tile = Tiles.filter((_Tile) => { return _Tile["ID"] === Tile["Tile"] })[0];
+
+        let Done = false;
+        BotUtils.GetUpgradeCost(Tile["Tile"], (Tile["Component"]?.Level as number) + 1)?.forEach((Detail) => {
+            const NewInventory = BotUtils.EditInventory(World["Inventory"], Detail["Item"], "Remove", Detail["Quantity"]);
+
+            if (NewInventory["length"] === 0) {
+                Done = false;
+                return;
+            }
+            else {
+                Done = true;
+                World["Inventory"] = NewInventory;
+            }
+        });
+
+        if (Done) {
+            if (Tile["Component"]) World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]]["Component"] = {
+                ...Tile["Component"],
+                Level: Tile["Component"]["Level"] + 1,
+                Workers: Math.ceil(Tile["Component"]["Workers"] + BotUtils.RandomNumber(Math.pow(2, Tile["Component"]["Level"] - BotUtils.RandomNumber(1, 2)), Math.pow(2, Tile["Component"]["Level"])))
+            };
+            await WorldDatabase.Set(Data["User"], World);
+
+            return {
+                content: `Your ${_Tile["Emoji"]}${_Tile["Name"]} was Successfully Upgraded to Level ${Tile["Component"]?.Level as number}!`,
+                ephemeral: true
+            };
+        }
+        else return {
+            content: `You don't have Enough Resources to Upgrade your Level ${Tile["Component"]?.Level as number} ${_Tile["Emoji"]}${_Tile["Name"]}!`,
+            ephemeral: true
+        };
     }
 };
 
@@ -95,7 +222,7 @@ class BotUtil {
         return Math.floor(Math.random() * (Max - Min + 1) ) + Min;
     }
 
-    async BuildHomeScreen(User: User, Interactor: User, Island: number, Outpost?: number): Promise<InteractionReplyOptions & InteractionUpdateOptions> {
+    async BuildHomeScreen(User: User, Interactor: User, Island: number, Outpost?: number): Promise<InteractionResponse> {
         if (User.bot) return {
             content: 'Bots can not have an Industrial World!',
             ephemeral: true
@@ -192,7 +319,7 @@ class BotUtil {
         };
     }
 
-    async BuildNavigation(Data: NavigationButtonData, Interactor: User): Promise<InteractionReplyOptions & InteractionUpdateOptions> {
+    async BuildNavigation(Data: NavigationButtonData, Interactor: User): Promise<InteractionResponse> {
         const World = await WorldDatabase.Get(Data["User"]);
 
         const Directions: { Direction: string, Emoji: string }[][] = [
@@ -224,6 +351,7 @@ class BotUtil {
                     {
                         ComponentType: "Button",
                         CustomID: 'TileInfo',
+                        Label: `[${String(Data["Position"])}]`,
                         Emoji: Tiles.filter((Tile) => { return Tile["ID"] === World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]]["Tile"] })[0]["Emoji"],
                         ButtonStyle: "Primary",
                         Data: Data
@@ -288,15 +416,15 @@ class BotUtil {
             Title?: string,
             Page: number
         }
-    ): InteractionReplyOptions & InteractionUpdateOptions {
+    ): InteractionResponse {
         defineEvent({
             Event: "interactionCreate",
             Name: `${Options["Title"]} Paginate Event`,
             Once: false,
             Execute: async (interaction: ButtonInteraction) => {
                 if (interaction.isButton()) {
-                    const PaginateID = interaction["customId"].split('$')[0];
-                    const Page = parseInt(JSON.parse(interaction["customId"].split('$')[1])["Page"]);
+                    const PaginateID = interaction.customId.split('$')[0];
+                    const Page = parseInt(JSON.parse(interaction.customId.split('$')[1])["Page"]);
 
                     if (PaginateID === `${Options["Title"]}Paginate`) return await interaction.update(this.BuildListEmbed<ListItemType>(
                         List, Content, SelectInteractionExecute,
@@ -312,7 +440,7 @@ class BotUtil {
             Once: false,
             Execute: async (interaction: StringSelectMenuInteraction) => {
                 if (interaction.isStringSelectMenu()) {
-                    if (interaction["customId"].split('$')[0] === `${Options["Title"]}StringSelect`) return await SelectInteractionExecute(interaction);
+                    if (interaction.customId.split('$')[0] === `${Options["Title"]}StringSelect`) return await SelectInteractionExecute(interaction);
                 }
             }
         });
@@ -372,7 +500,7 @@ class BotUtil {
         };
     }
 
-    async BuildInventoryItemEmbed(UserID: string, Item: number, Quantity: number): Promise<InteractionReplyOptions & InteractionUpdateOptions> {
+    async BuildInventoryItemEmbed(UserID: string, Item: number, Quantity: number): Promise<InteractionResponse> {
         const World = await WorldDatabase.Get(UserID);
         const Island = World["Islands"].filter((Island) => {
             const ShopItems = Island["Shop"]["Items"].map((Item) => { return Item["Quantity"] > 0 ? Item["Item"] : 0 });
@@ -451,29 +579,7 @@ class BotUtil {
         return NewInventory;
     }
 
-    async DestroyTile(Data: NavigationButtonData, Tool: "Axe" | "Pickaxe", Interactor: User): Promise<["Reply" | "Update", InteractionReplyOptions & InteractionUpdateOptions]> {
-        const AxeBreakableBlocks = [ 5, 6 ];
-        const PickaxeBreakableBlocks = [ 7, 8 ];
-        const World = await WorldDatabase.Get(Data["User"]);
-        const CurrentTile = World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]]["Tile"];
-
-        if ((Tool === "Axe" ? AxeBreakableBlocks : PickaxeBreakableBlocks).includes(CurrentTile as number)) {
-            const Tile = Tiles.filter((Tile) => { return Tile["ID"] === CurrentTile })[0];
-
-            World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]] = { Tile: Tile["DestroyReplace"] ?? 2 };
-
-            Tile["DestroyGive"]?.forEach((Item) => { World["Inventory"] = BotUtils.EditInventory(World["Inventory"], Item["Item"], "Add", Item["Quantity"]); });
-
-            await WorldDatabase.Set(Data["User"], World);
-            return ["Update", await BotUtils.BuildNavigation(Data, Interactor)];
-        }
-        else return ["Reply", {
-            content: `${Tool} can't be used on that Tile!`,
-            ephemeral: true
-        }];
-    }
-
-    async BuildShopItemEmbed(UserID: string, Island: number, Item: number): Promise<InteractionReplyOptions & InteractionUpdateOptions> {
+    async BuildShopItemEmbed(UserID: string, Island: number, Item: number): Promise<InteractionResponse> {
         const World = await WorldDatabase.Get(UserID);
 
         const ShopItem = World["Islands"][Island - 1]["Shop"]["Items"].filter((ShopItem) => { return ShopItem["Item"] === Item })[0];
@@ -517,7 +623,7 @@ class BotUtil {
         `;
     }
 
-    async BuildTileInfoEmbed(Data: NavigationButtonData, Interactor: User): Promise<InteractionReplyOptions & InteractionUpdateOptions> {
+    async BuildTileInfoEmbed(Data: NavigationButtonData, Interactor: User): Promise<InteractionResponse> {
         const World = await WorldDatabase.Get(Data["User"]);
         const Tile = World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]];
         const _Tile = Tiles.filter((tile) => { return tile["ID"] === Tile["Tile"] })[0];
@@ -573,118 +679,14 @@ class BotUtil {
         };
     }
 
-    async PaySalary(Data: NavigationButtonData): Promise<InteractionReplyOptions & InteractionUpdateOptions> {
-        const World = await WorldDatabase.Get(Data["User"]);
-                
-        const Tile = World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]];
-        const _Tile = Tiles.filter((_Tile) => { return _Tile["ID"] === Tile["Tile"] })[0];
-
-        if (!Tile["Component"]) return {
-            content: `You can't Pay Salary to this Tile!`,
-            ephemeral: true
-        };
-
-        const TimePassed = Math.floor((Date.now() - (Tile["Component"]["LastSalaryPay"])) / (1000 * 60 * 60 * 24));
-        if (TimePassed === 0) return {
-            content: `You can Pay Salary only Once per Day!`,
-            ephemeral: true
-        };
-
-        const NewInventory: World["Inventory"] = World["Inventory"];
-        let Done = false;
-        _Tile["Salary"]?.forEach((SalaryItem) => {
-            const Temp = BotUtils.EditInventory(World["Inventory"], SalaryItem["Item"], "Remove", SalaryItem["Quantity"] * TimePassed * (Tile["Component"]?.Workers as number))
-        
-            if (Temp["length"] === 0) {
-                Done = false;
-                return;
-            }
-            else {
-                Temp.forEach((InvItem) => {
-                    NewInventory.forEach((NewInvItem) => {
-                        if (NewInvItem["Item"] === InvItem["Item"]) NewInvItem["Quantity"] = InvItem["Quantity"];
-                    });
-                });
-                Done = true;
-            }
-        });
-
-        if (Done) {
-            World["Inventory"] = NewInventory;
-
-            Tile["Component"]["Hoarding"].forEach((HoardedStock) => {
-                World["Inventory"] = BotUtils.EditInventory(
-                    World["Inventory"],
-                    HoardedStock["Item"],
-                    "Add",
-                    (HoardedStock["Quantity"] - TimePassed) > 0 ? HoardedStock["Quantity"] - TimePassed : 0
-                );
-            });
-
-            World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]]["Component"] = {
-                ...Tile["Component"],
-                LastSalaryPay: Date.now(),
-                Hoarding: []
-            };
-
-            await WorldDatabase.Set(Data["User"], World);
-
-            return {
-                content: `Salary for ${_Tile["Emoji"]}${_Tile["Name"]}'s ${Tile["Component"]?.Workers} Workers was Paid Successfully!`,
-                ephemeral: true
-            };
-        } else {
-            return {};
-        }
-    }
-
-    GetUpgradeCost(Buildable: number, Level: number) {
+    GetUpgradeCost(Buildable: number, Level: number): { Item: number, Quantity: number }[] | undefined {
         return Tiles.filter((Tile) => { return Tile["ID"] === Buildable; })[0]
             .BuyingDetails?.map((Detail) => {
                 return { Item: Detail["Item"], Quantity: Detail["Quantity"] * Math.pow(2, Level - 1) };
             });
     }
 
-    async UpgradeBuildable(Data: NavigationButtonData): Promise<InteractionReplyOptions & InteractionUpdateOptions> {
-        const World = await WorldDatabase.Get(Data["User"]);
-
-        const Tile = World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]];
-        const _Tile = Tiles.filter((_Tile) => { return _Tile["ID"] === Tile["Tile"] })[0];
-
-        let Done = false;
-        this.GetUpgradeCost(Tile["Tile"], (Tile["Component"]?.Level as number) + 1)?.forEach((Detail) => {
-            const NewInventory = this.EditInventory(World["Inventory"], Detail["Item"], "Remove", Detail["Quantity"]);
-
-            if (NewInventory["length"] === 0) {
-                Done = false;
-                return;
-            }
-            else {
-                Done = true;
-                World["Inventory"] = NewInventory;
-            }
-        });
-
-        if (Done) {
-            if (Tile["Component"]) World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]]["Component"] = {
-                ...Tile["Component"],
-                Level: Tile["Component"]["Level"] + 1,
-                Workers: Math.ceil(Tile["Component"]["Workers"] + this.RandomNumber(Math.pow(2, Tile["Component"]["Level"] - this.RandomNumber(1, 2)), Math.pow(2, Tile["Component"]["Level"])))
-            };
-            await WorldDatabase.Set(Data["User"], World);
-
-            return {
-                content: `Your ${_Tile["Emoji"]}${_Tile["Name"]} was Successfully Upgraded to Level ${Tile["Component"]?.Level as number}!`,
-                ephemeral: true
-            };
-        }
-        else return {
-            content: `You don't have Enough Resources to Upgrade your Level ${Tile["Component"]?.Level as number} ${_Tile["Emoji"]}${_Tile["Name"]}!`,
-            ephemeral: true
-        };
-    }
-
-    BuildSettingEmbed(Setting: keyof Settings, Value: string): InteractionReplyOptions & InteractionUpdateOptions {
+    BuildSettingEmbed(Setting: keyof Settings, Value: string): InteractionResponse {
         const _Setting = SETTINGS.filter((_Setting) => { return _Setting["Name"] === Setting })[0];
 
         return {
@@ -716,6 +718,14 @@ class BotUtil {
                         Data: {
                             Setting: _Setting["Name"]
                         }
+                    }
+                ),
+                defineComponents(
+                    {
+                        ComponentType: "Button",
+                        CustomID: 'Settings',
+                        Label: 'Back to Settings',
+                        ButtonStyle: "Secondary"
                     }
                 )
             ]

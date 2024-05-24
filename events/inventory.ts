@@ -5,7 +5,7 @@ import { World, WorldDatabase } from "./../commands/world.js";
 import InventoryList from "./../commands/inventory.js";
 import { defineComponents, defineModal } from "./../resources/Bot/components.js";
 import { Items } from "./../resources/data.js";
-import { BotUtils } from "./../resources/utils.js";
+import { BotUtils } from "../resources/Utilities.js";
 
 defineEvent({
     Event: "interactionCreate",
@@ -13,8 +13,8 @@ defineEvent({
     Once: false,
     Execute: async (interaction: ButtonInteraction) => {
         if (interaction.isButton()) {
-            const CustomID = interaction["customId"].split('$')[0];
-            const Data = JSON.parse(interaction["customId"].split('$')[1]);
+            const CustomID = interaction.customId.split('$')[0];
+            const Data = JSON.parse(interaction.customId.split('$')[1]);
     
             if (CustomID === "Inventory") {
                 const World = (await WorldDatabase.Get(interaction.user.id));
@@ -24,7 +24,7 @@ defineEvent({
                     ephemeral: true
                 });
 
-                return await interaction.update(InventoryList(interaction, World["Inventory"]));
+                return await interaction.update(await InventoryList(interaction, World["Inventory"]));
             }
 
             else if (CustomID === "Buy") {
@@ -76,17 +76,17 @@ defineEvent({
     Once: false,
     Execute: async (interaction: ModalSubmitInteraction) => {
         if (interaction.isModalSubmit()) {
-            const CustomID = interaction["customId"].split('$')[0];
-            const Data = JSON.parse(interaction["customId"].split('$')[1]);
+            const CustomID = interaction.customId.split('$')[0];
+            const Data = JSON.parse(interaction.customId.split('$')[1]);
 
             const Item = Items.filter((Item) => { return Item["ID"] === parseInt(Data["Item"]) })[0];
 
             if (CustomID === "BuyModal") {
-                const World = await WorldDatabase.Get(interaction["user"]["id"]);
-                let Quantity = parseInt(interaction["fields"].getTextInputValue('BuyNum${}'));
+                const World = await WorldDatabase.Get(interaction.user.id);
+                let Quantity = parseInt(interaction.fields.getTextInputValue('BuyNum${}'));
 
                 if (isNaN(Quantity)) return await interaction.reply({
-                    content: `${interaction["fields"].getTextInputValue('BuyNum${}')} isn't a Valid Integral Quantity!`,
+                    content: `${interaction.fields.getTextInputValue('BuyNum${}')} isn't a Valid Integral Quantity!`,
                     ephemeral: true
                 });
 
@@ -134,7 +134,7 @@ defineEvent({
                     World["Inventory"] = NewInventory;
                     World["Inventory"] = BotUtils.EditInventory(World["Inventory"], Item["ID"], "Add", Quantity);
                     
-                    await WorldDatabase.Set(interaction["user"]["id"], World);
+                    await WorldDatabase.Set(interaction.user.id, World);
 
                     return await interaction.reply({
                         content: `You Successfully Bought ${Item["Emoji"]}${Item["Name"]} ×${Quantity}!\n\n${Message}`,
@@ -144,11 +144,11 @@ defineEvent({
             }
 
             else if (CustomID === "SellModal") {
-                const World = await WorldDatabase.Get(interaction["user"]["id"]);
-                let Quantity = parseInt(interaction["fields"].getTextInputValue('SellNum${}'));
+                const World = await WorldDatabase.Get(interaction.user.id);
+                let Quantity = parseInt(interaction.fields.getTextInputValue('SellNum${}'));
 
                 if (isNaN(Quantity)) return await interaction.reply({
-                    content: `${interaction["fields"].getTextInputValue('SellNum${}')} isn't a Valid Integral Quantity!`,
+                    content: `${interaction.fields.getTextInputValue('SellNum${}')} isn't a Valid Integral Quantity!`,
                     ephemeral: true
                 });
 
@@ -173,7 +173,7 @@ defineEvent({
 
                 World["Inventory"] = BotUtils.EditInventory(World["Inventory"], Item["ID"], "Remove", Quantity);
 
-                await WorldDatabase.Set(interaction["user"]["id"], World);
+                await WorldDatabase.Set(interaction.user.id, World);
                 return await interaction.reply({
                     content: `You Successfully Sold ${Item["Emoji"]}${Item["Name"]} ×${Quantity}\n\n${Message}`,
                     ephemeral: true
