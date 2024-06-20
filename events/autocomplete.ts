@@ -28,7 +28,7 @@ defineEvent({
                 const Choices = await FilteredOption.Autocomplete(interaction)
                 interaction.respond(
                     Choices.map((Choice) => {
-                        return { name: Choice, value: Choice };
+                        return { name: Choice["Name"], value: Choice["Value"] ?? Choice["Name"] };
                     })
                 );
             }

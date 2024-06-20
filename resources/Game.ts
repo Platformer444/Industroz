@@ -1,7 +1,7 @@
-import { InteractionReplyOptions, InteractionUpdateOptions, StringSelectMenuInteraction, User } from "discord.js"
+import { AnySelectMenuInteraction, ButtonInteraction, InteractionReplyOptions, InteractionUpdateOptions, StringSelectMenuInteraction, User } from "discord.js"
 
 import { World } from "commands/world.js"
-import { Biome, Item, Tile } from "./data.js"
+import { Biome, Item, Tile } from "./Data.js"
 import { NavigationButtonData } from "./Utilities.js"
 import { SelectMenuOption } from "./Bot/components.js";
 import { Settings } from "commands/settings.js";
@@ -49,10 +49,15 @@ export default interface Game {
             BuildShopItemEmbed: (UserID: string, Island: number, Item: number) => Promise<InteractionResponse>,
             BuildTileInfoEmbed: (Data: NavigationButtonData, Interactor: User) => Promise<InteractionResponse>,
             BuildSettingEmbed: (Setting: keyof Settings, Value: string) => InteractionResponse,
+            BuildMarketplaceUserEmbed: (User: string) => Promise<InteractionResponse>,
+            BuildMarketplaceOfferEmbed: (User: string, Offer: number) => Promise<InteractionResponse>,
+            BuildMarketplaceManageEmbed: (User: string) => Promise<InteractionResponse>,
 
             EditInventory: (InventoryList: World["Inventory"], Item: number, AddorRemove: "Add" | "Remove", Quantity: number) => World["Inventory"],
             DisplayItemCost: (ID: number, List: "Tiles" | "Items", Detail: "SellDetails" | "BuyingDetails" | "Upgrade", Emoji?: boolean, UpgradeLevel?: number) => string,
             GetUpgradeCost: (Buildable: number, Level: number) => { Item: number, Quantity: number }[] | undefined
+            Pay: (Inventory: World["Inventory"], Items: { Item: number, Quantity: number }[]) => [World["Inventory"], string]
+            InteractionUserCheck: (Interaction: ButtonInteraction | AnySelectMenuInteraction) => Promise<boolean>;
         }
     }
 };

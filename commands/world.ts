@@ -1,7 +1,7 @@
 import { defineComponents } from "../resources/Bot/components.js";
 import defineCommand from "../resources/Bot/commands.js";
-import DataBase from "./../resources/database.js";
-import { BotUtils } from "../resources/Utilities.js";
+import DataBase from "../resources/Database.js";
+import { Utils } from "../resources/Utilities.js";
 
 export interface World {
     Islands: {
@@ -49,8 +49,10 @@ defineCommand({
                     Autocomplete: async (interaction) => {
                         const World = await WorldDatabase.Get(interaction.user.id);
                         
-                        if (World) return World["Islands"].map((Island) => { return String(Island["ID"]) });
-                        else return ['You don\'t have Any Industrial World!'];
+                        if (World) return World["Islands"].map((Island) => {
+                            return { Name: "Island " + String(Island["ID"]), Value: String(Island["ID"]) }
+                        });
+                        else return [{ Name: 'You Don\'t Have Any Industrial World!' }];
                     }
                 },
                 {
@@ -109,7 +111,7 @@ defineCommand({
                 const Island = interaction.options.getInteger('island') ?? 1;
                 const User = interaction.options.getUser('user') ?? interaction.user;
 
-                return await interaction.reply(await BotUtils.BuildHomeScreen(User, interaction.user, Island))
+                return await interaction.reply(await Utils.BuildHomeScreen(User, interaction.user, Island))
         }
     }
 });

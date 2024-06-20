@@ -4,8 +4,8 @@ import defineEvent from "./../resources/Bot/events.js";
 import { World, WorldDatabase } from "./../commands/world.js";
 import InventoryList from "./../commands/inventory.js";
 import { defineComponents, defineModal } from "./../resources/Bot/components.js";
-import { Items } from "./../resources/data.js";
-import { BotUtils } from "../resources/Utilities.js";
+import { Items } from "../resources/Data.js";
+import { Utils } from "../resources/Utilities.js";
 
 defineEvent({
     Event: "interactionCreate",
@@ -13,6 +13,9 @@ defineEvent({
     Once: false,
     Execute: async (interaction: ButtonInteraction) => {
         if (interaction.isButton()) {
+
+            if (!(await Utils.InteractionUserCheck(interaction))) return;
+
             const CustomID = interaction.customId.split('$')[0];
             const Data = JSON.parse(interaction.customId.split('$')[1]);
     
@@ -37,8 +40,8 @@ defineEvent({
                         Components: defineComponents({
                             ComponentType: "TextInput",
                             CustomID: 'BuyNum',
-                            Label: `Amount of ${BotUtils.Plural(Item["Name"])}`,
-                            Placeholder: `How many ${BotUtils.Plural(Item["Name"])} You Want to Buy?`,
+                            Label: `Amount of ${Utils.Plural(Item["Name"])}`,
+                            Placeholder: `How many ${Utils.Plural(Item["Name"])} You Want to Buy?`,
                             Required: true,
                             TextStyle: "Short",
                         }),
@@ -57,8 +60,8 @@ defineEvent({
                         Components: defineComponents({
                             ComponentType: "TextInput",
                             CustomID: 'SellNum',
-                            Label: `Amount of ${BotUtils.Plural(Item["Name"])}`,
-                            Placeholder: `How many ${BotUtils.Plural(Item["Name"])} You Want to Sell?`,
+                            Label: `Amount of ${Utils.Plural(Item["Name"])}`,
+                            Placeholder: `How many ${Utils.Plural(Item["Name"])} You Want to Sell?`,
                             Required: true,
                             TextStyle: "Short",
                         }),
@@ -98,49 +101,29 @@ defineEvent({
                 const ShopItem = World["Islands"][Data["Island"] - 1]["Shop"]["Items"].filter((ShopItem) => { return ShopItem["Item"] === parseInt(Data["Item"]) })[0];
                 if (Quantity > ShopItem["Quantity"]) Quantity = ShopItem["Quantity"];
                 if (Quantity === 0) return interaction.reply({
-                    content: `There are no ${Item["Emoji"]}${BotUtils.Plural(Item["Name"])} available in the Shop!`,
+                    content: `There are no ${Item["Emoji"]}${Utils.Plural(Item["Name"])} available in the Shop!`,
                     ephemeral: true
                 });
 
-                let Done = false;
                 let Message = `**Inventory Change:**\n> ${Item["Emoji"]}${Item["Name"]} +${Quantity}\n`;
-                const NewInventory: World["Inventory"] = World["Inventory"];
-                Item["BuyingDetails"]?.forEach(async (BuyingDetail) => {
-                    const BuyingItem = Items.filter((Item) => { return Item["ID"] === BuyingDetail["Item"]; })[0];
-                    const Temp = BotUtils.EditInventory(World["Inventory"], BuyingDetail["Item"], "Remove", BuyingDetail["Quantity"]);
+                const [NewInventory, ResultMessage] = Utils.Pay(World["Inventory"], Item["BuyingDetails"] ?? []);
 
-                    if (Temp["length"] === 0) {
-                        Done = false;
-                        return await interaction.reply({
-                            content: `You don't have enough ${BuyingItem["Emoji"]} ${BuyingItem["Name"]} to Buy ${Item["Emoji"]} ${Item["Name"]}`!,
-                            ephemeral: true
-                        });
-                    }
-                    else {
-                        Temp.forEach((InvItem) => {
-                            NewInventory.forEach((NewInvItem) => {
-                                if (NewInvItem["Item"] === InvItem["Item"]) NewInvItem["Quantity"] = InvItem["Quantity"];
-                            });
-                        });
-                        Done = true;
-                    }
+                if (ResultMessage !== '') return await interaction.reply({
+                    content: ResultMessage,
+                    ephemeral: true
                 });
 
-                if (Done) {
-                    World["Islands"][Data["Island"] - 1]["Shop"]["Items"].forEach((ShopItem) => {
-                        if (ShopItem["Item"] === parseInt(Data["Item"])) ShopItem["Quantity"] -= Quantity;
-                    });
+                World["Islands"][Data["Island"] - 1]["Shop"]["Items"].forEach((ShopItem) => {
+                    if (ShopItem["Item"] === parseInt(Data["Item"])) ShopItem["Quantity"] -= Quantity;
+                });
+                World["Inventory"] = NewInventory;
+                World["Inventory"] = Utils.EditInventory(World["Inventory"], Item["ID"], "Add", Quantity);
+                await WorldDatabase.Set(interaction.user.id, World);
 
-                    World["Inventory"] = NewInventory;
-                    World["Inventory"] = BotUtils.EditInventory(World["Inventory"], Item["ID"], "Add", Quantity);
-                    
-                    await WorldDatabase.Set(interaction.user.id, World);
-
-                    return await interaction.reply({
-                        content: `You Successfully Bought ${Item["Emoji"]}${Item["Name"]} ×${Quantity}!\n\n${Message}`,
-                        ephemeral: true
-                    });
-                }
+                return await interaction.reply({
+                    content: `You Successfully Bought ${Item["Emoji"]}${Item["Name"]} ×${Quantity}!\n\n${Message}`,
+                    ephemeral: true
+                });
             }
 
             else if (CustomID === "SellModal") {
@@ -166,12 +149,12 @@ defineEvent({
                 Item["SellDetails"]?.forEach((Detail) => {
                     const SellingItem = Items.filter((SellingItem) => { return SellingItem["ID"] === Detail["Item"] })[0];
 
-                    World["Inventory"] = BotUtils.EditInventory(World["Inventory"], Detail["Item"], "Add", Quantity * Detail["Quantity"]);
+                    World["Inventory"] = Utils.EditInventory(World["Inventory"], Detail["Item"], "Add", Quantity * Detail["Quantity"]);
 
                     Message += `> ${SellingItem["Emoji"]}${SellingItem["Name"]} +${Quantity * Detail["Quantity"]}\n`;
                 });
 
-                World["Inventory"] = BotUtils.EditInventory(World["Inventory"], Item["ID"], "Remove", Quantity);
+                World["Inventory"] = Utils.EditInventory(World["Inventory"], Item["ID"], "Remove", Quantity);
 
                 await WorldDatabase.Set(interaction.user.id, World);
                 return await interaction.reply({

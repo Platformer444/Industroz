@@ -1,9 +1,9 @@
 import { StringSelectMenuInteraction } from "discord.js";
 
-import { BotUtils, NavigationButtonData, WorldUtils } from "./Utilities.js";
+import { NavigationButtonData, Utils } from "./Utilities.js";
 import { Settings } from "commands/settings.js";
 
-export type ItemQuantityPair = { Item: number, Quantity: number };
+type ItemQuantityPair = { Item: number, Quantity: number };
 
 export interface Tile {
     ID: number,
@@ -146,7 +146,7 @@ export const Items: Item[] = [
         Description: 'A Shiny, Golden and Circular In-Game Currency for Industroz.',
         Emoji: '🪙',
         Usable: async (interaction, Data) => {
-            await interaction.reply(await WorldUtils.PaySalary(Data));
+            await interaction.reply(await Utils.PaySalary(Data));
         }
     },
     {
@@ -161,7 +161,7 @@ export const Items: Item[] = [
             { Item: 1, Quantity: 2 }
         ],
         Usable: async (interaction, Data) => {
-            const Reply = await WorldUtils.DestroyTile(Data, interaction.user, "Axe");
+            const Reply = await Utils.DestroyTile(Data, interaction.user, "Axe");
             if (Reply[0] === "Reply") await interaction.reply(Reply[1]);
             else if (Reply[0] === "Update") await interaction.update(Reply[1]);
         }
@@ -172,7 +172,7 @@ export const Items: Item[] = [
         Description: 'A Hard Piece of Metal attached to a Wooden Stick used to Destroy Stone-Like Materials.',
         Emoji: '⛏️',
         Usable: async (interaction, Data) => {
-            const Reply = await WorldUtils.DestroyTile(Data, interaction.user, "Pickaxe");
+            const Reply = await Utils.DestroyTile(Data, interaction.user, "Pickaxe");
             if (Reply[0] === "Reply") await interaction.reply(Reply[1]);
             else if (Reply[0] === "Update") await interaction.update(Reply[1]);
         }

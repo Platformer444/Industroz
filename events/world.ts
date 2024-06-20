@@ -3,9 +3,9 @@ import { ButtonInteraction, StringSelectMenuInteraction } from "discord.js";
 import defineEvent from "../resources/Bot/events.js";
 import { World, WorldDatabase } from "./../commands/world.js";
 import { client } from "../resources/Bot/client.js";
-import { BotUtils, WorldUtils } from "../resources/Utilities.js";
+import { Utils } from "../resources/Utilities.js";
 import { SelectMenuOption, defineComponents } from "./../resources/Bot/components.js";
-import { Items, Tile, Tiles } from "./../resources/data.js";
+import { Items, Tile, Tiles } from "../resources/Data.js";
 import { SettingsDatabase } from "./../commands/settings.js";
 
 defineEvent({
@@ -14,6 +14,9 @@ defineEvent({
     Once: false,
     Execute: async (interaction: ButtonInteraction) => {
         if (interaction.isButton()) {
+
+            if (!(await Utils.InteractionUserCheck(interaction))) return;
+
             const CustomID = interaction.customId.split('$')[0];
             const Data = JSON.parse(interaction.customId.split('$')[1]);
 
@@ -29,7 +32,7 @@ defineEvent({
                     Islands: [
                         {
                             ID: 1,
-                            Tiles: WorldUtils.CreateWorld(100, 100),
+                            Tiles: Utils.CreateWorld(100, 100),
                             Outposts: [{
                                 Location: [49, 49],
                                 Default: true
@@ -69,14 +72,14 @@ defineEvent({
                 });
             }
 
-            else if (CustomID === "Explore") return await interaction.update(await BotUtils.BuildNavigation(Data, interaction.user));
+            else if (CustomID === "Explore") return await interaction.update(await Utils.BuildNavigation(Data, interaction.user));
 
             else if (CustomID === "Build") return await interaction.update({
                 components: [
-                    ...(BotUtils.BuildListEmbed<Tile>(
+                    ...(Utils.BuildListEmbed<Tile>(
                         Tiles.filter((Tile) => { return Tile["Buildable"] ?? false }),
                         (Item) => {
-                            const CostString = BotUtils.DisplayItemCost(Item["ID"], "Tiles", "BuyingDetails");
+                            const CostString = Utils.DisplayItemCost(Item["ID"], "Tiles", "BuyingDetails");
                             return [
                                 '',
                                 { Label: Item["Name"], Description: CostString.includes('undefined') ? Item["Description"] : CostString, Emoji: Item["Emoji"] }
@@ -93,50 +96,28 @@ defineEvent({
                                     ephemeral: true
                                 });
                             }
-                            
-                            const NewInventory: World["Inventory"] = World["Inventory"];
-                            let Done = false;
-                            if (Buildable["BuyingDetails"]) Buildable["BuyingDetails"]?.forEach(async (BuyingDetail) => {
-                                const Temp = BotUtils.EditInventory(World["Inventory"], BuyingDetail["Item"], "Remove", BuyingDetail["Quantity"]);
-        
-                                if (Temp["length"] === 0) {
-                                    const Item = Items.filter((Item) => { return Item["ID"] === BuyingDetail["Item"]; })[0];
-                                    Done = false;
-        
-                                    return await interaction.reply({
-                                        content: `You don't have enough ${Item["Emoji"]} ${Item["Name"]} to Build ${Buildable["Emoji"]} ${Buildable["Name"]}`!,
-                                        ephemeral: true
-                                    });
-                                }
-                                else {
-                                    Temp.forEach((InvItem) => {
-                                        NewInventory.forEach((NewInvItem) => {
-                                            if (NewInvItem["Item"] === InvItem["Item"]) NewInvItem["Quantity"] = InvItem["Quantity"];
-                                        });
-                                    });
-                                    Done = true;
-                                }
-                            });
-                            else Done = true;
-        
-                            if (Done) {
-                                World["Inventory"] = NewInventory;
 
-                                if (Buildable["ID"] === 3) World["Islands"][Data["Island"] - 1]["Outposts"].push({
-                                    Location: [Data["Position"][0], Data["Position"][1]],
-                                    Default: false
-                                });
-                                else if (Buildable["ID"] === 4) {
-                                    World["Islands"][Data["Island"] - 1]["Shop"]["Items"].forEach((Item) => { Item["Quantity"] += 10 });
-                                    World["Islands"][Data["Island"] - 1]["Shop"]["RestockNum"] += 10;
-                                    World["Islands"][Data["Island"] - 1]["Shop"]["LastRestockTime"] = Date.now();
-                                }
-        
-                                World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]] = ![3].includes(Buildable["ID"]) ? { Tile: Buildable["ID"], Component: { Level: 1, Workers: 1, LastSalaryPay: Date.now(), Hoarding: [] } } : { Tile: Buildable["ID"] };
-                                await WorldDatabase.Set(interaction.user.id, World);
-        
-                                return await interaction.update(await BotUtils.BuildNavigation(Data, interaction.user));
+                            const [NewInventory, Message] = Utils.Pay(World["Inventory"], Buildable["BuyingDetails"] ?? []);
+                            if (Message !== '') return await interaction.reply({
+                                content: Message,
+                                ephemeral: true
+                            });
+
+                            if (Buildable["ID"] === 3) World["Islands"][Data["Island"] - 1]["Outposts"].push({
+                                Location: [Data["Position"][0], Data["Position"][1]],
+                                Default: false
+                            });
+                            else if (Buildable["ID"] === 4) {
+                                World["Islands"][Data["Island"] - 1]["Shop"]["Items"].forEach((Item) => { Item["Quantity"] += 10 });
+                                World["Islands"][Data["Island"] - 1]["Shop"]["RestockNum"] += 10;
+                                World["Islands"][Data["Island"] - 1]["Shop"]["LastRestockTime"] = Date.now();
                             }
+                            
+                            World["Inventory"] = NewInventory;
+                            World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]] = ![3].includes(Buildable["ID"]) ? { Tile: Buildable["ID"], Component: { Level: 1, Workers: 1, LastSalaryPay: Date.now(), Hoarding: [] } } : { Tile: Buildable["ID"] };
+                            await WorldDatabase.Set(interaction.user.id, World);
+    
+                            return await interaction.update(await Utils.BuildNavigation(Data, interaction.user));
                         },
                         {
                             Embed: false,
@@ -170,7 +151,7 @@ defineEvent({
                 });
                 else return await interaction.update({
                     components: [
-                        ...(BotUtils.BuildListEmbed<World["Inventory"][0]>(
+                        ...(Utils.BuildListEmbed<World["Inventory"][0]>(
                             UsableItems,
                             (Item) => {
                                 const _Item = Items.filter((_Item) => { return _Item["ID"] === Item["Item"] })[0];
@@ -187,7 +168,7 @@ defineEvent({
                                 if (Item.Usable) {
                                     await Item.Usable(interaction, Data);
                                     
-                                    world["Inventory"] = BotUtils.EditInventory(world["Inventory"], Item["ID"], "Remove", 1);
+                                    world["Inventory"] = Utils.EditInventory(world["Inventory"], Item["ID"], "Remove", 1);
             
                                     return await WorldDatabase.Set(Data["User"], world);
                                 }
@@ -212,17 +193,17 @@ defineEvent({
                 });
             }
 
-            else if (CustomID === "Home") return await interaction.update(await BotUtils.BuildHomeScreen(await client.users.fetch(Data["User"]), interaction.user, Data["Island"]));
+            else if (CustomID === "Home") return await interaction.update(await Utils.BuildHomeScreen(await client.users.fetch(Data["User"]), interaction.user, Data["Island"]));
 
             else if (CustomID === "Nav") {
-                if (Data["To"] === "L") return await interaction.update(await WorldUtils.NavigateWorld(Data, interaction.user, [0, -1]));
-                else if (Data["To"] === "R") return await interaction.update(await WorldUtils.NavigateWorld(Data, interaction.user, [0, 1]));
-                else if (Data["To"] === "D") return await interaction.update(await WorldUtils.NavigateWorld(Data, interaction.user, [1, 0]));
-                else if (Data["To"] === "U") return await interaction.update(await WorldUtils.NavigateWorld(Data, interaction.user, [-1, 0]));
-                else if (Data["To"] === "DL") return await interaction.update(await WorldUtils.NavigateWorld(Data, interaction.user, [1, -1]));
-                else if (Data["To"] === "DR") return await interaction.update(await WorldUtils.NavigateWorld(Data, interaction.user, [1, 1]));
-                else if (Data["To"] === "UL") return await interaction.update(await WorldUtils.NavigateWorld(Data, interaction.user, [-1, -1]));
-                else if (Data["To"] === "UR") return await interaction.update(await WorldUtils.NavigateWorld(Data, interaction.user, [-1, 1]));
+                if (Data["To"] === "L") return await interaction.update(await Utils.NavigateWorld(Data, interaction.user, [0, -1]));
+                else if (Data["To"] === "R") return await interaction.update(await Utils.NavigateWorld(Data, interaction.user, [0, 1]));
+                else if (Data["To"] === "D") return await interaction.update(await Utils.NavigateWorld(Data, interaction.user, [1, 0]));
+                else if (Data["To"] === "U") return await interaction.update(await Utils.NavigateWorld(Data, interaction.user, [-1, 0]));
+                else if (Data["To"] === "DL") return await interaction.update(await Utils.NavigateWorld(Data, interaction.user, [1, -1]));
+                else if (Data["To"] === "DR") return await interaction.update(await Utils.NavigateWorld(Data, interaction.user, [1, 1]));
+                else if (Data["To"] === "UL") return await interaction.update(await Utils.NavigateWorld(Data, interaction.user, [-1, -1]));
+                else if (Data["To"] === "UR") return await interaction.update(await Utils.NavigateWorld(Data, interaction.user, [-1, 1]));
             }
 
            else if (CustomID === "GetOfflineEarnings") {
@@ -241,7 +222,7 @@ defineEvent({
 
                         _Tile["Production"]?.forEach((Production) => {
                             const SalaryPaid = (Date.now() - (Tile["Component"]?.LastSalaryPay as number)) / (1000 * 60 * 60 * 24) < 1;
-                            World["Inventory"] = BotUtils.EditInventory(
+                            World["Inventory"] = Utils.EditInventory(
                                 World["Inventory"],
                                 Production,
                                 "Add",
@@ -297,7 +278,7 @@ defineEvent({
 
                 return await interaction.reply({
                     content: Message,
-                    components: SelectMenuOptions["length"] > 0 ? BotUtils.BuildListEmbed<SelectMenuOption>(
+                    components: SelectMenuOptions["length"] > 0 ? Utils.BuildListEmbed<SelectMenuOption>(
                         SelectMenuOptions,
                         (Item) => {
                             return [
@@ -309,7 +290,7 @@ defineEvent({
                             const Island = parseInt(interaction.values[0].split('$')[0]);
                             const Location = JSON.parse(interaction.values[0].split('$')[1]);
 
-                            return await interaction.reply(await WorldUtils.PaySalary({
+                            return await interaction.reply(await Utils.PaySalary({
                                 User: interaction.user.id,
                                 Island: Island,
                                 Position: Location
@@ -327,13 +308,13 @@ defineEvent({
             else if (CustomID === "TileInfo") {
                 return await interaction.reply({
                     ephemeral: true,
-                    ...(await BotUtils.BuildTileInfoEmbed(Data, interaction.user))
+                    ...(await Utils.BuildTileInfoEmbed(Data, interaction.user))
                 });
             }
 
-            else if (CustomID === "Salary") return await interaction.reply(await WorldUtils.PaySalary(Data));
+            else if (CustomID === "Salary") return await interaction.reply(await Utils.PaySalary(Data));
 
-            else if (CustomID === "Upgrade") await interaction.reply(await WorldUtils.UpgradeBuildable(Data));
+            else if (CustomID === "Upgrade") await interaction.reply(await Utils.UpgradeBuildable(Data));
         }
     }
 });
@@ -344,6 +325,9 @@ defineEvent({
     Once: false,
     Execute: async (interaction: StringSelectMenuInteraction) => {
         if (interaction.isStringSelectMenu()) {
+
+            if (!(await Utils.InteractionUserCheck(interaction))) return;
+
             const CustomID = interaction.customId.split('$')[0];
             const Data = JSON.parse(interaction.customId.split('$')[1]);
 
@@ -351,11 +335,11 @@ defineEvent({
                 if (interaction.values[0] === 'create_an_island') {
                     const World = await WorldDatabase.Get(Data["User"]);
 
-                    const NewInventory = BotUtils.EditInventory(World["Inventory"], 1, "Remove", World["Inventory"]["length"] * 100000);
+                    const NewInventory = Utils.EditInventory(World["Inventory"], 1, "Remove", World["Inventory"]["length"] * 100000);
                     if (NewInventory["length"] === 0) {
                         const Item = Items.filter((Item) => { return Item["ID"] === 1 })[0];
                         return await interaction.reply({
-                            content: `You don't have Enough ${Item["Emoji"]}${BotUtils.Plural(Item["Name"])} to Create a New Island!`,
+                            content: `You don't have Enough ${Item["Emoji"]}${Utils.Plural(Item["Name"])} to Create a New Island!`,
                             ephemeral: true
                         });
                     }
@@ -363,7 +347,7 @@ defineEvent({
                         World["Islands"].push(
                             {
                                 ID: World["Islands"]["length"] + 1,
-                                Tiles: WorldUtils.CreateWorld(100, 100),
+                                Tiles: Utils.CreateWorld(100, 100),
                                 Outposts: [{
                                     Location: [49, 49],
                                     Default: true
@@ -383,13 +367,13 @@ defineEvent({
                         World["Inventory"] = NewInventory;
 
                         await WorldDatabase.Set(Data["User"], World);
-                        return await interaction.update(await BotUtils.BuildHomeScreen(await client["users"].fetch(Data["User"]), interaction.user, World["Islands"]["length"]));
+                        return await interaction.update(await Utils.BuildHomeScreen(await client["users"].fetch(Data["User"]), interaction.user, World["Islands"]["length"]));
                     }
                 }
-                else return await interaction.update(await BotUtils.BuildHomeScreen(await client["users"].fetch(Data["User"]), interaction.user, parseInt(interaction.values[0].split('_')[1])));
+                else return await interaction.update(await Utils.BuildHomeScreen(await client["users"].fetch(Data["User"]), interaction.user, parseInt(interaction.values[0].split('_')[1])));
             }
 
-            else if (CustomID === "OutpostSelect") return await interaction.update(await BotUtils.BuildHomeScreen(await client["users"].fetch(Data["User"]), Data["Island"], parseInt(interaction.values[0].split('_')[1])));
+            else if (CustomID === "OutpostSelect") return await interaction.update(await Utils.BuildHomeScreen(await client["users"].fetch(Data["User"]), Data["Island"], parseInt(interaction.values[0].split('_')[1])));
         }
     }
 });

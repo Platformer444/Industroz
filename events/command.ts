@@ -14,8 +14,6 @@ defineEvent({
             Execute() {
                 console.error(`There is no Command as ${interaction.command?.name}`)
             }
-        }).Execute(
-            interaction as ChatInputCommandInteraction
-        )
+        }).Execute(interaction as ChatInputCommandInteraction);
     }
 });

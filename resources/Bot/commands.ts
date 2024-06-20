@@ -1,4 +1,4 @@
-import { ApplicationCommandOptionType, AutocompleteInteraction, ButtonInteraction, ChatInputCommandInteraction, AnySelectMenuInteraction } from "discord.js"
+import { ApplicationCommandOptionType, AutocompleteInteraction, ChatInputCommandInteraction } from "discord.js"
 import chalk from "chalk";
 
 interface Command {
@@ -9,7 +9,7 @@ interface Command {
     Options?: CommandOption[],
     Execute: (
         interaction: ChatInputCommandInteraction
-    ) => any
+    ) => Promise<any>
 };
 
 interface SubCommandGroup {
@@ -31,7 +31,7 @@ interface CommandOption {
     Required?: boolean,
     Autocomplete?: (
         interaction: AutocompleteInteraction
-    ) => string[] | Promise<string[]>,
+    ) => Promise<{ Name: string, Value?: string }[]>,
     Choices?: string[]
 };
 
@@ -59,6 +59,8 @@ export function TransformAPI(Data: any[] = [], Into: "Option" | "SubCommandGroup
     else if (Into === "SubCommandGroup") return Data.map((SubCommandGroup) => {
         return {
             type: 2,
+            name: SubCommandGroup["Name"],
+            description: SubCommandGroup["Description"],
             options: TransformAPI(SubCommandGroup["SubCommands"], "SubCommand") ?? []
         }
     });

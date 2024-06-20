@@ -2,8 +2,9 @@ import { ButtonInteraction, ModalSubmitInteraction, StringSelectMenuInteraction 
 
 import defineEvent from "./../resources/Bot/events.js";
 import { SettingsDatabase, SettingsList } from "./../commands/settings.js";
-import { SETTINGS, Setting } from "./../resources/data.js";
+import { SETTINGS, Setting } from "../resources/Data.js";
 import { defineComponents, defineModal } from "./../resources/Bot/components.js";
+import { Utils } from "./../resources/Utilities.js";
 
 defineEvent({
     Event: "interactionCreate",
@@ -11,6 +12,9 @@ defineEvent({
     Once: false,
     Execute: async (interaction: ButtonInteraction) => {
         if (interaction.isButton()) {
+
+            if (!(await Utils.InteractionUserCheck(interaction))) return;
+
             const CustomID = interaction.customId.split('$')[0];
             const Data = JSON.parse(interaction.customId.split('$')[1]);
 
@@ -48,6 +52,9 @@ defineEvent({
     Once: false,
     Execute: async (interaction: StringSelectMenuInteraction) => {
         if (interaction.isStringSelectMenu()) {
+
+            if (!(await Utils.InteractionUserCheck(interaction))) return;
+
             const CustomID = interaction.customId.split('$')[0];
             const Data = JSON.parse(interaction.customId.split('$')[1]);
 

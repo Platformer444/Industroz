@@ -1,8 +1,8 @@
-import { time } from "discord.js";
+import { APIEmbed, time } from "discord.js";
 
-import { BotUtils } from "../resources/Utilities.js";
+import { Utils } from "../resources/Utilities.js";
 import defineCommand from "./../resources/Bot/commands.js";
-import { Item, Items } from "./../resources/data.js";
+import { Item, Items } from "../resources/Data.js";
 import { WorldDatabase } from "./world.js";
 import { SettingsDatabase } from "./settings.js";
 
@@ -18,15 +18,17 @@ defineCommand({
             Autocomplete: async (interaction) => {
                 const World = await WorldDatabase.Get(interaction.user.id);
 
-                if (World) return World["Islands"].map((Island) => { return String(Island["ID"]) });
-                else return ['You Don\'t Have Any Industrial World!'];
+                if (World) return World["Islands"].map((Island) => {
+                    return { Name: "Island " + String(Island["ID"]), Value: String(Island["ID"]) }
+                });
+                else return [{ Name: 'You Don\'t Have Any Industrial World!' }];
             }
         }
     ],
     Execute: async (interaction) => {
         const Island = parseInt(interaction.options.getString('island') ?? "");
         if (isNaN(Island)) return await interaction.reply({
-            content: `You Don't Have an Industrial World!`,
+            content: `The Specified Island ${Island} is Invalid!`,
             ephemeral: true
         });
 
@@ -76,7 +78,7 @@ defineCommand({
         });
 
         const Reply = 
-            BotUtils.BuildListEmbed<Item>(
+            Utils.BuildListEmbed<Item>(
                 BuyableItems,
                 (Item) => {
                     return [
@@ -89,8 +91,8 @@ defineCommand({
                     ];
                 },
                 async (interaction) => {
-                    await interaction.reply(
-                        await BotUtils.BuildShopItemEmbed(
+                    await interaction.update(
+                        await Utils.BuildShopItemEmbed(
                             interaction.user.id,
                             Island,
                             Items.filter((Item) => { return Item["Name"].replaceAll(' ', '_').toLowerCase() === interaction.values[0] })[0]["ID"]
@@ -102,7 +104,7 @@ defineCommand({
                     Page: 1
                 }
             );
-        Reply["embeds"]?.splice(0, 0, {
+        (Reply["embeds"] as APIEmbed[])?.splice(0, 0, {
             title: `Shop Restocks`,
             description: Message["length"] === 0 ? `*No Shop Restocks. Shop would Restock at **${String(time((Math.floor(World["Islands"][Island - 1]["Shop"]["LastRestockTime"] / 1000) + (60 * 60 * 24)), "F"))}***` : Message
         });

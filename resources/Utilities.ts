@@ -1,11 +1,12 @@
-import { ButtonInteraction, InteractionReplyOptions, InteractionUpdateOptions, StringSelectMenuInteraction, User, time } from "discord.js";
+import { APIActionRowComponent, APIEmbed, APIMessageActionRowComponent, AnySelectMenuInteraction, ButtonInteraction, ComponentType, InteractionReplyOptions, InteractionUpdateOptions, StringSelectMenuInteraction, TextChannel, User, time } from "discord.js";
 import { stripIndent } from "common-tags";
 
-import { Biome, Biomes, Item, Items, SETTINGS, Tiles } from "./data.js";
+import { Biome, Biomes, Item, Items, SETTINGS, Tiles } from "./Data.js";
 import { World, WorldDatabase } from "../commands/world.js";
 import { defineComponents, Component, SelectMenuOption } from "./Bot/components.js";
 import defineEvent from "./Bot/events.js";
 import { Settings, SettingsDatabase } from "../commands/settings.js";
+import { MarketplaceDatabase } from "../commands/marketplace.js";
 
 export interface NavigationButtonData {
     User: string,
@@ -14,7 +15,8 @@ export interface NavigationButtonData {
 };
 type InteractionResponse = InteractionReplyOptions & InteractionUpdateOptions;
 
-class WorldUtil {
+class Util {
+    // World Utils
     CreateWorld(Width: number, Height: number, DefaultOutpostPosition: [number, number] = [(Height / 2) - 1, (Width / 2) - 1]): World["Islands"][0]["Tiles"] {
         const World: World["Islands"][0]["Tiles"] = [];
 
@@ -23,7 +25,7 @@ class WorldUtil {
         let BiomeHeight: number = 10;
 
         while (_Biomes["length"] < (Width * Height) / (BiomeWidth * BiomeHeight)) Biomes.forEach((Biome) => {
-            if (BotUtils.RandomNumber(0, 10 - (Biome["SpawningChance"] ?? 10)) === 0) _Biomes.push(Biome);
+            if (Utils.RandomNumber(0, 10 - (Biome["SpawningChance"] ?? 10)) === 0) _Biomes.push(Biome);
         });
 
         for (let i = 0; i < Height; i++) {
@@ -34,7 +36,7 @@ class WorldUtil {
 
                 const Tile = Biome["Tiles"].filter((Tile) => {
                     const _Tile = Tiles.filter((_Tile) => { return _Tile["ID"] === Tile })[0];
-                    return BotUtils.RandomNumber(0, 10 - (_Tile["Spawnable"] ?? 10)) === 0;
+                    return Utils.RandomNumber(0, 10 - (_Tile["Spawnable"] ?? 10)) === 0;
                 })[0];
 
                 if (!Tile) WorldChunk.push({ Tile: 2 });
@@ -68,7 +70,7 @@ class WorldUtil {
     }
 
     async NavigateWorld(Data: NavigationButtonData, Interactor: User, Move: [number, number]): Promise<InteractionResponse> {
-        return await BotUtils.BuildNavigation(
+        return await Utils.BuildNavigation(
             {
                 User: Data["User"],
                 Island: Data["Island"],
@@ -89,10 +91,10 @@ class WorldUtil {
 
             World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]] = { Tile: Tile["DestroyReplace"] ?? 2 };
 
-            Tile["DestroyGive"]?.forEach((Item) => { World["Inventory"] = BotUtils.EditInventory(World["Inventory"], Item["Item"], "Add", Item["Quantity"]); });
+            Tile["DestroyGive"]?.forEach((Item) => { World["Inventory"] = Utils.EditInventory(World["Inventory"], Item["Item"], "Add", Item["Quantity"]); });
 
             await WorldDatabase.Set(Data["User"], World);
-            return ["Update", await BotUtils.BuildNavigation(Data, Interactor)];
+            return ["Update", await Utils.BuildNavigation(Data, Interactor)];
         }
         else return ["Reply", {
             content: `${Tool} can't be used on that Tile!`,
@@ -106,7 +108,7 @@ class WorldUtil {
         const Tile = World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]];
         const _Tile = Tiles.filter((_Tile) => { return _Tile["ID"] === Tile["Tile"] })[0];
 
-        if (!Tile["Component"]) return {
+        if (!Tile["Component"] || !_Tile["Salary"]) return {
             content: `You can't Pay Salary to this Tile!`,
             ephemeral: true
         };
@@ -117,52 +119,29 @@ class WorldUtil {
             ephemeral: true
         };
 
-        const NewInventory: World["Inventory"] = World["Inventory"];
-        let Done = false;
-        _Tile["Salary"]?.forEach((SalaryItem) => {
-            const Temp = BotUtils.EditInventory(World["Inventory"], SalaryItem["Item"], "Remove", SalaryItem["Quantity"] * TimePassed * (Tile["Component"]?.Workers as number))
-        
-            if (Temp["length"] === 0) {
-                Done = false;
-                return;
-            }
-            else {
-                Temp.forEach((InvItem) => {
-                    NewInventory.forEach((NewInvItem) => {
-                        if (NewInvItem["Item"] === InvItem["Item"]) NewInvItem["Quantity"] = InvItem["Quantity"];
-                    });
-                });
-                Done = true;
-            }
+        const [NewInventory, Message] = this.Pay(World["Inventory"], _Tile["Salary"]);
+        if (Message !== '') return { content: Message, ephemeral: true }
+
+        Tile["Component"]["Hoarding"].forEach((HoardedStock) => {
+            World["Inventory"] = Utils.EditInventory(
+                World["Inventory"],
+                HoardedStock["Item"],
+                "Add",
+                (HoardedStock["Quantity"] - TimePassed) > 0 ? HoardedStock["Quantity"] - TimePassed : 0
+            );
         });
+        World["Inventory"] = NewInventory;
+        World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]]["Component"] = {
+            ...Tile["Component"],
+            LastSalaryPay: Date.now(),
+            Hoarding: []
+        };
+        await WorldDatabase.Set(Data["User"], World);
 
-        if (Done) {
-            World["Inventory"] = NewInventory;
-
-            Tile["Component"]["Hoarding"].forEach((HoardedStock) => {
-                World["Inventory"] = BotUtils.EditInventory(
-                    World["Inventory"],
-                    HoardedStock["Item"],
-                    "Add",
-                    (HoardedStock["Quantity"] - TimePassed) > 0 ? HoardedStock["Quantity"] - TimePassed : 0
-                );
-            });
-
-            World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]]["Component"] = {
-                ...Tile["Component"],
-                LastSalaryPay: Date.now(),
-                Hoarding: []
-            };
-
-            await WorldDatabase.Set(Data["User"], World);
-
-            return {
-                content: `Salary for ${_Tile["Emoji"]}${_Tile["Name"]}'s ${Tile["Component"]?.Workers} Workers was Paid Successfully!`,
-                ephemeral: true
-            };
-        } else {
-            return {};
-        }
+        return {
+            content: `Salary for ${_Tile["Emoji"]}${_Tile["Name"]}'s ${Tile["Component"]?.Workers} Workers was Paid Successfully!`,
+            ephemeral: true
+        };
     }
 
     async UpgradeBuildable(Data: NavigationButtonData): Promise<InteractionResponse> {
@@ -171,41 +150,24 @@ class WorldUtil {
         const Tile = World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]];
         const _Tile = Tiles.filter((_Tile) => { return _Tile["ID"] === Tile["Tile"] })[0];
 
-        let Done = false;
-        BotUtils.GetUpgradeCost(Tile["Tile"], (Tile["Component"]?.Level as number) + 1)?.forEach((Detail) => {
-            const NewInventory = BotUtils.EditInventory(World["Inventory"], Detail["Item"], "Remove", Detail["Quantity"]);
+        const [NewInventory, Message] = this.Pay(World["Inventory"], Utils.GetUpgradeCost(Tile["Tile"], (Tile["Component"]?.Level as number) + 1) ?? []);
+        if (Message) return { content: Message, ephemeral: true };
 
-            if (NewInventory["length"] === 0) {
-                Done = false;
-                return;
-            }
-            else {
-                Done = true;
-                World["Inventory"] = NewInventory;
-            }
-        });
+        if (Tile["Component"]) World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]]["Component"] = {
+            ...Tile["Component"],
+            Level: Tile["Component"]["Level"] + 1,
+            Workers: Math.ceil(Tile["Component"]["Workers"] + Utils.RandomNumber(Math.pow(2, Tile["Component"]["Level"] - Utils.RandomNumber(1, 2)), Math.pow(2, Tile["Component"]["Level"])))
+        };
+        World["Inventory"] = NewInventory;
+        await WorldDatabase.Set(Data["User"], World);
 
-        if (Done) {
-            if (Tile["Component"]) World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]]["Component"] = {
-                ...Tile["Component"],
-                Level: Tile["Component"]["Level"] + 1,
-                Workers: Math.ceil(Tile["Component"]["Workers"] + BotUtils.RandomNumber(Math.pow(2, Tile["Component"]["Level"] - BotUtils.RandomNumber(1, 2)), Math.pow(2, Tile["Component"]["Level"])))
-            };
-            await WorldDatabase.Set(Data["User"], World);
-
-            return {
-                content: `Your ${_Tile["Emoji"]}${_Tile["Name"]} was Successfully Upgraded to Level ${Tile["Component"]?.Level as number}!`,
-                ephemeral: true
-            };
-        }
-        else return {
-            content: `You don't have Enough Resources to Upgrade your Level ${Tile["Component"]?.Level as number} ${_Tile["Emoji"]}${_Tile["Name"]}!`,
+        return {
+            content: `Your ${_Tile["Emoji"]}${_Tile["Name"]} was Successfully Upgraded to Level ${Tile["Component"]?.Level as number}!`,
             ephemeral: true
         };
     }
-};
 
-class BotUtil {
+    // Text and Number Utills
     Plural(Word: string): string {
         if (Word.endsWith('f')) return `${Word.slice(0, Word["length"] - 1)}ves`;
         else if (Word.endsWith('o')) return `${Word}es`;
@@ -222,6 +184,7 @@ class BotUtil {
         return Math.floor(Math.random() * (Max - Min + 1) ) + Min;
     }
 
+    // Embed Utils
     async BuildHomeScreen(User: User, Interactor: User, Island: number, Outpost?: number): Promise<InteractionResponse> {
         if (User.bot) return {
             content: 'Bots can not have an Industrial World!',
@@ -249,7 +212,7 @@ class BotUtil {
             ) + 1;
 
         return {
-            content: WorldUtils.RenderWorld(
+            content: this.RenderWorld(
                 World["Islands"][Island - 1]["Tiles"],
                 World["Islands"][Island - 1]["Outposts"][Outpost - 1]["Location"]
             ),
@@ -342,7 +305,7 @@ class BotUtil {
 
         const UsableItems = Items.filter((Item) => { return Item["Usable"]; });
         return {
-            content: WorldUtils.RenderWorld(
+            content: this.RenderWorld(
                 World["Islands"][Data["Island"] - 1]["Tiles"],
                 Data["Position"]
             ),
@@ -462,7 +425,7 @@ class BotUtil {
             ] : undefined,
             
             components: [
-                defineComponents(
+                ...((Options["SelectMenu"] ?? true) ? [defineComponents(
                     {
                         ComponentType: "StringSelect",
                         CustomID: `${Options["Title"]}StringSelect`,
@@ -477,7 +440,7 @@ class BotUtil {
                             })
                             .map((Item) => { return Content(Item, List.indexOf(Item), List)[1]; })
                     }
-                ),
+                )] : []),
                 defineComponents(
                     {
                         ComponentType: "Button",
@@ -512,7 +475,7 @@ class BotUtil {
         return {
             embeds: [
                 {
-                    title: `${item["Emoji"]} ${Quantity > 1 ? BotUtils.Plural(item["Name"]) : item["Name"]} (×${Quantity})`,
+                    title: `${item["Emoji"]} ${Quantity > 1 ? Utils.Plural(item["Name"]) : item["Name"]} (×${Quantity})`,
                     description: item["Description"],
                     footer: {
                         text: stripIndent`
@@ -554,31 +517,6 @@ class BotUtil {
         };
     }
 
-    EditInventory(InventoryList: World["Inventory"], Item: number, AddorRemove: "Add" | "Remove", Quantity: number): World["Inventory"] {
-        const NewInventory: World["Inventory"] = [];
-        let Done = false;
-
-        InventoryList.forEach((InventoryItem, Index) => {
-            if (InventoryItem["Item"] === Item) {
-                Done = true;
-                
-                if (AddorRemove === "Add") NewInventory.push({ Item: Item, Quantity: InventoryItem["Quantity"] + Quantity });
-                else {
-                    if (InventoryItem["Quantity"] - Quantity === 0) InventoryList.splice(Index, 1);
-                    else if (InventoryItem["Quantity"] - Quantity < 0) Done = false;
-                    else NewInventory.push({ Item: Item, Quantity: InventoryItem["Quantity"] - Quantity });
-                }
-            } else NewInventory.push(InventoryItem);
-        });
-
-        if (!Done) {
-            if (AddorRemove === "Add" && Quantity > 0) NewInventory.push({ Item: Item, Quantity: Quantity });
-            else return [];
-        }
-
-        return NewInventory;
-    }
-
     async BuildShopItemEmbed(UserID: string, Island: number, Item: number): Promise<InteractionResponse> {
         const World = await WorldDatabase.Get(UserID);
 
@@ -604,23 +542,18 @@ class BotUtil {
                         ButtonStyle: "Primary",
                         Data: { Island: Island, Item: Item }
                     }
+                ),
+                defineComponents(
+                    {
+                        ComponentType: "Button",
+                        CustomID: 'Shop',
+                        Label: 'Back to Shop',
+                        ButtonStyle: "Secondary",
+                        Data: { Island: Island }
+                    }
                 )
             ],
         };
-    }
-
-    DisplayItemCost(ID: number, List: "Tiles" | "Items", Detail: "SellDetails" | "BuyingDetails" | "Upgrade", Emoji: boolean = false, UpgradeLevel?: number): string {
-        const Filtered = (List === "Tiles" ? Tiles : Items).filter((_ID) => { return _ID["ID"] === ID })[0];
-
-        return stripIndent`
-            ${
-                (List === "Tiles" ? this.GetUpgradeCost(Filtered["ID"], UpgradeLevel ?? 1) : (Filtered as Item)[Detail === "Upgrade" ? "BuyingDetails" : Detail])?.map((Detail) => {
-                    const DetailItem = Items.filter((DetailItem) => { return DetailItem["ID"] === Detail["Item"]; })[0];
-
-                    return `${Emoji ? DetailItem["Emoji"] : DetailItem["Name"]}×${Detail["Quantity"]}`
-                }).join(' ')
-            }${Detail === "BuyingDetails" ? ` → ${Emoji ? Filtered["Emoji"] : Filtered["Name"]} ×1` : ''}
-        `;
     }
 
     async BuildTileInfoEmbed(Data: NavigationButtonData, Interactor: User): Promise<InteractionResponse> {
@@ -679,13 +612,6 @@ class BotUtil {
         };
     }
 
-    GetUpgradeCost(Buildable: number, Level: number): { Item: number, Quantity: number }[] | undefined {
-        return Tiles.filter((Tile) => { return Tile["ID"] === Buildable; })[0]
-            .BuyingDetails?.map((Detail) => {
-                return { Item: Detail["Item"], Quantity: Detail["Quantity"] * Math.pow(2, Level - 1) };
-            });
-    }
-
     BuildSettingEmbed(Setting: keyof Settings, Value: string): InteractionResponse {
         const _Setting = SETTINGS.filter((_Setting) => { return _Setting["Name"] === Setting })[0];
 
@@ -731,7 +657,254 @@ class BotUtil {
             ]
         };
     }
+
+    async BuildMarketplaceUserEmbed(User: string): Promise<InteractionResponse> {
+        const Marketplace = await MarketplaceDatabase.Get('Global');
+        const Settings = await SettingsDatabase.GetAll();
+        const UserOffers = Marketplace["Offers"].filter((UserOffers) => { return UserOffers["User"] === User; })[0];
+
+        if (UserOffers === undefined) return {
+            content: `The Specified User has no Offers Available!`,
+            ephemeral: true
+        };
+
+        const Reply = this.BuildListEmbed<typeof UserOffers["Items"][0]>(
+            UserOffers["Items"],
+            (Item, Index) => {
+                const OfferItem = Items.filter((OfferItem) => { return OfferItem["ID"] === Item["Item"]["Item"]; })[0];
+                const BuyItem = Items.filter((BuyItem) => { return BuyItem["ID"] === Item["Cost"]["Item"]; })[0];
+
+                return [
+                    `${(Index as number) + 1}. ${BuyItem["Emoji"]} ×${Item["Cost"]["Quantity"]} → ${OfferItem["Emoji"]} ×${Item["Item"]["Quantity"]} (Ends at **${String(time(Math.floor(Item["OfferEndTime"] / 1000), "F"))}**)`,
+                    {
+                        Label: `${BuyItem["Name"]} ×${Item["Cost"]["Quantity"]} → ${OfferItem["Name"]} ×${Item["Item"]["Quantity"]}`,
+                        Description: `Offer Ends At ${(new Date(Item["OfferEndTime"]).toUTCString())}`,
+                        Value: String(Index)
+                    }
+                ];
+            },
+            async (interaction) => {
+                return await interaction.update(await this.BuildMarketplaceOfferEmbed(User, interaction.user.id, Number(interaction.values[0])));
+            },
+            { Title: `${Settings[User]["DisplayName"]}`, Page: 1 }
+        );
+        (Reply["components"] as APIActionRowComponent<APIMessageActionRowComponent>[]).push(
+            defineComponents(
+                {
+                    ComponentType: "Button",
+                    CustomID: 'Marketplace',
+                    Label: 'Back to Marketplace',
+                    ButtonStyle: "Secondary"
+                }
+            )
+        );
+
+        return Reply;
+    }
+
+    async BuildMarketplaceOfferEmbed(User: string, Interactor: string, Offer: number): Promise<InteractionResponse> {
+        const Marketplace = await MarketplaceDatabase.Get('Global');
+        const Settings = await SettingsDatabase.GetAll();
+        const UserOffer = Marketplace["Offers"].filter((UserOffers) => { return UserOffers["User"] === User; })[0];
+
+        if (UserOffer === undefined) return {
+            content: `The Specified Offer doesn't Exist!`,
+            ephemeral: true
+        };
+
+        const _Offer = UserOffer["Items"][Offer];
+
+        const OfferItem = Items.filter((OfferItem) => { return OfferItem["ID"] === _Offer["Item"]["Item"]; })[0];
+        const BuyItem = Items.filter((BuyItem) => { return BuyItem["ID"] === _Offer["Cost"]["Item"]; })[0];
+        return {
+            embeds: [
+                {
+                    title: `${Settings[User]["DisplayName"]}'s Offer ${Offer + 1}`,
+                    description: `Ends at **${String(time(Math.floor(_Offer["OfferEndTime"] / 1000), "F"))}** (Your Timezone)`,
+                    fields: [
+                        { name: 'You Give:', value: `${BuyItem["Emoji"]} ${BuyItem["Name"]} ×${_Offer["Cost"]["Quantity"]}`, inline: true },
+                        { name: 'Your Receive:', value: `${OfferItem["Emoji"]} ${OfferItem["Name"]} ×${_Offer["Item"]["Quantity"]}`, inline: true }
+                    ]
+                }
+            ],
+            components: [
+                defineComponents(
+                    {
+                        ComponentType: "Button",
+                        CustomID: 'BuyOffer',
+                        Label: stripIndent`Buy ${User === Interactor ? '(You can\'t Buy Your Own Offer!)': '' }`,
+                        ButtonStyle: "Primary",
+                        Disabled: User === Interactor,
+                        Data: { User: User, Offer: Offer }
+                    }
+                ),
+                defineComponents(
+                    {
+                        ComponentType: "Button",
+                        CustomID: 'MarketplaceUser',
+                        Label: 'Back to User Offers',
+                        ButtonStyle: "Secondary",
+                        Data: { User: User }
+                    }
+                )
+            ]
+        };
+    }
+
+    async BuildMarketplaceManageEmbed(User: string): Promise<InteractionResponse> {
+        const Marketplace = await MarketplaceDatabase.Get('Global');
+        const Settings = await SettingsDatabase.GetAll();
+
+        let UserOffers = Marketplace["Offers"].filter((UserOffers) => { return UserOffers["User"] === User; })[0];
+        if (UserOffers === undefined) UserOffers = { User: User, Items: [] };
+
+        const Reply = this.BuildListEmbed<typeof UserOffers["Items"][0]>(
+            UserOffers["Items"],
+            (Item, Index) => {
+                const OfferItem = Items.filter((OfferItem) => { return OfferItem["ID"] === Item["Item"]["Item"]; })[0];
+                const BuyItem = Items.filter((BuyItem) => { return BuyItem["ID"] === Item["Cost"]["Item"]; })[0];
+
+                const ItemCostString = `${BuyItem["Emoji"]} ${BuyItem["Name"]} ×${Item["Cost"]["Quantity"]} → ${OfferItem["Emoji"]} ${OfferItem["Name"]} ×${Item["Item"]["Quantity"]}`;
+                const EndsAtString = `(Ends at **${String(time(Math.floor(Item["OfferEndTime"] / 1000), "F"))}**)`;
+                return [
+                    stripIndent`${(Index as number) + 1}. ${ItemCostString} ${EndsAtString}`,
+                    { Label: 'Item' }
+                ];
+            },
+            (interaction) => {},
+            { SelectMenu: UserOffers["Items"]["length"] !== 0, Title: Settings[User]["DisplayName"], Page: 1 }
+        );
+
+        if (UserOffers["Items"].length === 0) (Reply["embeds"] as APIEmbed[])[0]["description"] = `You do not have any Offers Available in the Marketplace!`;
+
+        (Reply["components"] as APIActionRowComponent<APIMessageActionRowComponent>[]).splice(
+            0, 0,
+            defineComponents(
+                {
+                    ComponentType: "Button",
+                    CustomID: 'OfferAdd',
+                    Label: 'Add New Offer',
+                    ButtonStyle: "Success",
+                    Data: { User: User }
+                },
+                {
+                    ComponentType: "Button",
+                    CustomID: 'OfferRemove',
+                    Label: 'Remove Offer',
+                    ButtonStyle: "Danger",
+                    Data: { User: User, Offer: '' }
+                }
+            )
+        )
+
+        return Reply;
+    }
+
+    // Miscellaneous Utils
+    EditInventory(InventoryList: World["Inventory"], Item: number, AddorRemove: "Add" | "Remove", Quantity: number): World["Inventory"] {
+        const NewInventory: World["Inventory"] = [];
+        let Done = false;
+
+        InventoryList.forEach((InventoryItem, Index) => {
+            if (InventoryItem["Item"] === Item) {
+                Done = true;
+                
+                if (AddorRemove === "Add") NewInventory.push({ Item: Item, Quantity: InventoryItem["Quantity"] + Quantity });
+                else {
+                    if (InventoryItem["Quantity"] - Quantity === 0) InventoryList.splice(Index, 1);
+                    else if (InventoryItem["Quantity"] - Quantity < 0) Done = false;
+                    else NewInventory.push({ Item: Item, Quantity: InventoryItem["Quantity"] - Quantity });
+                }
+            } else NewInventory.push(InventoryItem);
+        });
+
+        if (!Done) {
+            if (AddorRemove === "Add" && Quantity > 0) NewInventory.push({ Item: Item, Quantity: Quantity });
+            else return [];
+        }
+
+        return NewInventory;
+    }
+
+    DisplayItemCost(ID: number, List: "Tiles" | "Items", Detail: "SellDetails" | "BuyingDetails" | "Upgrade", Emoji: boolean = false, UpgradeLevel?: number): string {
+        const Filtered = (List === "Tiles" ? Tiles : Items).filter((_ID) => { return _ID["ID"] === ID })[0];
+
+        return stripIndent`
+            ${
+                (List === "Tiles" ? this.GetUpgradeCost(Filtered["ID"], UpgradeLevel ?? 1) : (Filtered as Item)[Detail === "Upgrade" ? "BuyingDetails" : Detail])?.map((Detail) => {
+                    const DetailItem = Items.filter((DetailItem) => { return DetailItem["ID"] === Detail["Item"]; })[0];
+
+                    return `${Emoji ? DetailItem["Emoji"] : DetailItem["Name"]} ×${Detail["Quantity"]}`
+                }).join(' ')
+            }${Detail === "BuyingDetails" ? ` → ${Emoji ? Filtered["Emoji"] : Filtered["Name"]} ×1` : ''}
+        `;
+    }
+
+    GetUpgradeCost(Buildable: number, Level: number): { Item: number, Quantity: number }[] | undefined {
+        return Tiles.filter((Tile) => { return Tile["ID"] === Buildable; })[0]
+            .BuyingDetails?.map((Detail) => {
+                return { Item: Detail["Item"], Quantity: Detail["Quantity"] * Math.pow(2, Level - 1) };
+            });
+    }
+
+    Pay(Inventory: World["Inventory"], CostItems: { Item: number, Quantity: number }[]): [World["Inventory"], string] {
+        const NewInventory: World["Inventory"] = Inventory;
+        let Done = false;
+        let Message: string = '';
+        CostItems.forEach(async (Cost) => {
+            const Temp = this.EditInventory(Inventory, Cost["Item"], "Remove", Cost["Quantity"]);
+
+            if (Temp["length"] === 0) {
+                const Item = Items.filter((Item) => { return Item["ID"] === Cost["Item"] })[0];
+
+                Done = false;
+                Message = `You don't have enough ${Item["Emoji"]} ${Item["Name"]} to Complete this Payment!`!;
+                return false;
+            }
+            else {
+                Temp.forEach((InvItem) => {
+                    NewInventory.forEach((NewInvItem) => {
+                        if (NewInvItem["Item"] === InvItem["Item"]) NewInvItem["Quantity"] = InvItem["Quantity"];
+                    });
+                });
+                Done = true;
+            }
+        })
+
+        return [
+            Done ? NewInventory : Inventory,
+            Message
+        ];
+    }
+
+    async InteractionUserCheck(Interaction: ButtonInteraction | AnySelectMenuInteraction): Promise<boolean> {
+        const Message = Interaction.message;
+        const Reference = Interaction.message.reference;
+
+        const UnusableResponse: InteractionResponse = {
+            content: `The ${ComponentType[Interaction.componentType]} can't be Used by You!`,
+            ephemeral: true
+        };
+        if (Interaction.isButton() || Interaction.isAnySelectMenu()) {
+            if (Message === null) {
+                const Guild = await Interaction.client.guilds.fetch(Reference?.guildId as string);
+                const Channel = (await Guild.channels.fetch(Reference?.channelId as string)) as TextChannel;
+                const RepliedMessage = await Channel.messages.fetch(Reference?.messageId as string);
+
+                if (RepliedMessage.interaction?.user.id === Interaction.user.id) return true;
+                else {
+                    await Interaction.reply(UnusableResponse);
+                    return false;
+                }
+            }
+            else if (Interaction.user.id !== (Message.interaction?.user.id as string)) {
+                await Interaction.reply(UnusableResponse);
+                return false;
+            }
+            else return true;
+        }
+        else return true;
+    }
 }
 
-export const WorldUtils = new WorldUtil();
-export const BotUtils = new BotUtil();
+export const Utils = new Util();

@@ -1,9 +1,9 @@
 import { BaseInteraction, InteractionReplyOptions, InteractionUpdateOptions } from "discord.js";
 
-import { SETTINGS, Setting } from "./../resources/data.js";
+import { SETTINGS, Setting } from "../resources/Data.js";
 import defineCommand from "./../resources/Bot/commands.js";
-import DataBase from "./../resources/database.js";
-import { BotUtils } from "../resources/Utilities.js";
+import DataBase from "../resources/Database.js";
+import { Utils } from "../resources/Utilities.js";
 
 export interface Settings {
     Visibility: "Public" | "Private" | string,
@@ -12,8 +12,8 @@ export interface Settings {
 
 export const SettingsDatabase: DataBase<Settings> = new DataBase('Settings');
 
-export async function SettingsList(interaction: BaseInteraction, Settings: Settings): Promise<InteractionReplyOptions & InteractionUpdateOptions> {
-    return await BotUtils.BuildListEmbed<Setting>(
+export function SettingsList(interaction: BaseInteraction, Settings: Settings): InteractionReplyOptions & InteractionUpdateOptions {
+    return Utils.BuildListEmbed<Setting>(
         SETTINGS,
         (Item) => {
             return [
@@ -23,7 +23,7 @@ export async function SettingsList(interaction: BaseInteraction, Settings: Setti
         },
         async (interaction) => {
             const Setting = SETTINGS.filter((Setting) => { return Setting["Name"].replaceAll(' ', '_').toLowerCase() === interaction.values[0] })[0]
-            await interaction.update(BotUtils.BuildSettingEmbed(Setting["Name"], Settings[Setting["Name"]]));
+            await interaction.update(Utils.BuildSettingEmbed(Setting["Name"], Settings[Setting["Name"]]));
         },
         {
             Title: `${Settings["DisplayName"]}'s Settings`,
@@ -35,8 +35,28 @@ export async function SettingsList(interaction: BaseInteraction, Settings: Setti
 defineCommand({
     Name: 'settings',
     Description: 'Manage Your Industrial World Settings',
+    Options: [
+        {
+            Type: "String",
+            Name: 'setting',
+            Description: 'The Setting You want to View',
+            Autocomplete: async (interaction) => {
+                const Settings = await SettingsDatabase.Get(interaction.user.id);
+                return SETTINGS.map((Setting, Index) => { return { Name: `${Setting["Name"]}: ${Settings[Setting["Name"]]}`, Value: String(Index) } });
+            },
+        }
+    ],
     Execute: async (interaction) => {
+        const Setting = parseInt(interaction.options.getString('setting') ?? "");
         const UserSettings = await SettingsDatabase.Get(interaction.user.id);
-        return interaction.reply(await SettingsList(interaction, UserSettings));
+
+        if (!Setting) return await interaction.reply(SettingsList(interaction, UserSettings));
+        else {
+            if (!SETTINGS[Setting]) return await interaction.reply({
+                content: `The Specified Setting ${Setting} is Invalid!`,
+                ephemeral: true
+            });
+            else return await interaction.reply(Utils.BuildSettingEmbed(SETTINGS[Setting]["Name"], UserSettings[SETTINGS[Setting]["Name"]]));
+        }
     }
 });

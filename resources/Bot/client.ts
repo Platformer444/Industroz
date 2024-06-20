@@ -15,7 +15,7 @@ export async function ClientLogin(
         EventsDir: string,
         ClientOptions: ClientOptions
     }
-): Promise<Client<true>> {
+): Promise<Client> {
     console.log();
     const ProjectDir: string = path.join(path.dirname(fileURLToPath(import.meta.url)), '../../');
 
