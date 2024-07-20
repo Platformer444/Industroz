@@ -3,19 +3,17 @@ import { ButtonInteraction } from "discord.js";
 import defineEvent from "./../resources/Bot/events.js";
 import { MarketplaceDatabase, Marketplace } from "./../commands/marketplace.js";
 import { Utils } from "./../resources/Utilities.js";
-import { WorldDatabase } from "./../commands/world.js";
+import { World, WorldDatabase } from "./../commands/world.js";
 import { SettingsDatabase } from "./../commands/settings.js";
+import { Item, Items } from "./../resources/Data.js";
 
 defineEvent(
     {
         Event: "interactionCreate",
         Name: 'Marketplace Button Interaction',
-        Once: false,
+        
         Execute: async (interaction: ButtonInteraction) => {
             if (interaction.isButton()) {
-
-                if (!(await Utils.InteractionUserCheck(interaction))) return;
-        
                 const CustomID = interaction.customId.split('$')[0];
                 const Data = JSON.parse(interaction.customId.split('$')[1]);
 
@@ -51,6 +49,68 @@ defineEvent(
 
                     return await interaction.reply({
                         content: `You have Successfully Bought the Offer of ${Settings[Data["User"]]["DisplayName"]}!`,
+                        ephemeral: true
+                    });
+                }
+
+                else if (CustomID === 'OfferAdd') {
+                    const World = await WorldDatabase.Get(interaction.user.id);
+
+                    const FilteredItems = World["Inventory"].filter((InvItem) => {
+                        const Item = Items.filter((Item) => { return Item["ID"] === InvItem["Item"] })[0];
+                        return Item["SellDetails"];
+                    });
+                    await interaction.reply({
+                        ...(Utils.BuildListEmbed<World["Inventory"][0]>(
+                            FilteredItems,
+                            (InvItem) => {
+                                const Item = Items.filter((Item) => { return Item["ID"] === InvItem["Item"] })[0];
+                                return [
+                                    '',
+                                    { Label: Item["Name"], Emoji: Item["Emoji"], Description: Item["Description"], Value: JSON.stringify({ Item: Item["ID"], Quantity: InvItem["Quantity"] }) }
+                                ];
+                            },
+                            async (interaction) => {
+                                const InvItem: { Item: number, Quantity: number } = JSON.parse(interaction.values[0]);
+                                const Item = Items.filter((Item) => { return InvItem["Item"] === Item["ID"] })[0];
+
+                                await interaction.update({
+                                    content: `> Item: ${Item["Emoji"]} ${Item["Name"]}`,
+                                    components: Utils.BuildListEmbed<number>(
+                                        new Array(InvItem["Quantity"]).fill(0).map((Value, Index) => { return Index + 1; }),
+                                        (Quantity) => {
+                                            return [
+                                                '',
+                                                { Label: String(Quantity), Value: JSON.stringify({ Item: InvItem["Item"], Quantity: Quantity }) }
+                                            ]
+                                        },
+                                        async (interaction) => {
+                                            const InvItem: { Item: number, Quantity: number } = JSON.parse(interaction.values[0]);
+                                            const Item = Items.filter((Item) => { return InvItem["Item"] === Item["ID"] })[0];
+
+                                            await interaction.update({
+                                                content: 
+                                                    `> Item: ${Item["Emoji"]} ${Item["Name"]}
+                                                    > Quantity: ×${InvItem["Quantity"]}`,
+                                                components: Utils.BuildListEmbed<Item>(
+                                                    Items.filter((Item) => { return Item["ID"] !== InvItem["Item"] }),
+                                                    (Item) => {
+                                                        return [
+                                                            '',
+                                                            { Label: Item["Name"], Emoji: Item["Emoji"], Description: Item["Description"], Value: JSON.stringify({  }) }
+                                                        ]
+                                                    },
+                                                    (interaction) => {},
+                                                    { Title: 'CCCC', Embed: false, Page: 1 }
+                                                )["components"]
+                                            });
+                                        },
+                                        { Title: 'BBBB', Embed: false, Page: 1 }
+                                    )["components"]
+                                });
+                            },
+                            { Embed: false, Title: 'AAAA', Page: 1 }
+                        )),
                         ephemeral: true
                     });
                 }

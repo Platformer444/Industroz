@@ -6,7 +6,7 @@ import { Commands } from "../resources/Bot/commands.js";
 defineEvent({
     Event: "interactionCreate",
     Name: "AutoComplete Handling",
-    Once: false,
+    
     Execute: async (interaction: AutocompleteInteraction) => {
         if (interaction.isAutocomplete()) {
             const FilteredCommand = Commands.filter((Command) => { return Command.Name === interaction.command?.name })[0]

@@ -11,12 +11,9 @@ import { SettingsDatabase } from "./../commands/settings.js";
 defineEvent({
     Event: "interactionCreate",
     Name: "World Button Interactions",
-    Once: false,
+    
     Execute: async (interaction: ButtonInteraction) => {
         if (interaction.isButton()) {
-
-            if (!(await Utils.InteractionUserCheck(interaction))) return;
-
             const CustomID = interaction.customId.split('$')[0];
             const Data = JSON.parse(interaction.customId.split('$')[1]);
 
@@ -322,12 +319,9 @@ defineEvent({
 defineEvent({
     Event: "interactionCreate",
     Name: 'World StringSelectMenu Interaction',
-    Once: false,
+    
     Execute: async (interaction: StringSelectMenuInteraction) => {
         if (interaction.isStringSelectMenu()) {
-
-            if (!(await Utils.InteractionUserCheck(interaction))) return;
-
             const CustomID = interaction.customId.split('$')[0];
             const Data = JSON.parse(interaction.customId.split('$')[1]);
 

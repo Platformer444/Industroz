@@ -18,7 +18,6 @@ interface Marketplace {
 };
 
 export const MarketplaceDatabase: DataBase<Marketplace> = new DataBase('Marketplace');
-MarketplaceDatabase.Set('Global', { Offers: [{ User: '1150357997491593247', Items: Array<Marketplace["Offers"][0]["Items"][0]>(10).fill({ Item: { Item: 1, Quantity: 1 }, Cost: { Item: 1, Quantity: 1 }, OfferEndTime: Date.now() + (3 * 24 * 60 * 60 * 1000) }) }] }, true);
 
 export async function Marketplace(): Promise<InteractionReplyOptions & InteractionUpdateOptions> {
     const Marketplace = await MarketplaceDatabase.Get('Global');
@@ -69,36 +68,22 @@ defineCommand({
                     Description: 'View the Offers from a Particular User'
                 }
             ]
-        }
-    ],
-    SubCommandGroups: [
+        },
         {
-            Name: 'offers',
+            Name: 'manage',
             Description: 'Manage Your Marketplace Offers',
-            SubCommands: [
-                {
-                    Name: 'manage',
-                    Description: 'Manage Your Offers in the Marketplace'
-                }
-            ]
         }
     ],
     Execute: async (interaction) => {
-        switch (interaction.options.getSubcommandGroup(false)) {
-            case null:
-                switch (interaction.options.getSubcommand(true)) {
+        switch (interaction.options.getSubcommand(true)) {
                     case 'view':
                         const User = interaction.options.getUser('user');
 
                         if (User === null) return await interaction.reply(await Marketplace());
                         else return await interaction.reply(await Utils.BuildMarketplaceUserEmbed(User.id));
-                }
 
-            case 'offers':
-                switch (interaction.options.getSubcommand(true)) {
-                    case 'manage':
-                        return await interaction.reply(await Utils.BuildMarketplaceManageEmbed(interaction.user.id));
-                }
+            case 'manage':
+                return await interaction.reply(await Utils.BuildMarketplaceManageEmbed(interaction.user.id));
         }
     }
 });

@@ -8,7 +8,7 @@ import "dotenv/config";
 defineEvent({
     Event: "error",
     Name: 'Error Handling',
-    Once: false,
+    
     Execute: async (Error: Error) => {
         const DevServer = await client.guilds.fetch(process.env.DEV_SERVER ?? "");
         

@@ -4,8 +4,8 @@ import { client } from "./client.js";
 
 interface Event {
     Name: string,
-    Event: keyof ClientEvents
-    Once: boolean,
+    Event: keyof ClientEvents,
+    EndTime?: number,
     Execute: Function
 }
 
@@ -16,7 +16,8 @@ export default function defineEvent(Event: Event) {
         Events.push(Event);
         console.log(chalk.blueBright(`\tEvent ${chalk.cyanBright(Event["Name"])} Defined!\n`));
 
-        if (Event["Once"]) client.once(Event["Event"], (...args) => Event.Execute(...args));
-        else client.on(Event["Event"], (...args) => Event.Execute(...args));
+        client.on(Event["Event"], async (...args) => await Event.Execute(...args));
+
+        if (Event["EndTime"]) setTimeout(() => { console.log('Hello'); client.off(Event["Event"], async (...args) => await Event.Execute(...args)) }, Event["EndTime"]);
     }
 }

@@ -383,7 +383,7 @@ class Util {
         defineEvent({
             Event: "interactionCreate",
             Name: `${Options["Title"]} Paginate Event`,
-            Once: false,
+            
             Execute: async (interaction: ButtonInteraction) => {
                 if (interaction.isButton()) {
                     const PaginateID = interaction.customId.split('$')[0];
@@ -400,7 +400,8 @@ class Util {
         defineEvent({
             Event: "interactionCreate",
             Name: `${Options["Title"]} StringSelectMenu Event`,
-            Once: false,
+            EndTime: 1000,
+            
             Execute: async (interaction: StringSelectMenuInteraction) => {
                 if (interaction.isStringSelectMenu()) {
                     if (interaction.customId.split('$')[0] === `${Options["Title"]}StringSelect`) return await SelectInteractionExecute(interaction);
@@ -786,13 +787,6 @@ class Util {
                     Label: 'Add New Offer',
                     ButtonStyle: "Success",
                     Data: { User: User }
-                },
-                {
-                    ComponentType: "Button",
-                    CustomID: 'OfferRemove',
-                    Label: 'Remove Offer',
-                    ButtonStyle: "Danger",
-                    Data: { User: User, Offer: '' }
                 }
             )
         )

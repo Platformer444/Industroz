@@ -10,12 +10,9 @@ import { Utils } from "../resources/Utilities.js";
 defineEvent({
     Event: "interactionCreate",
     Name: 'Inventory Button Interaction',
-    Once: false,
+    
     Execute: async (interaction: ButtonInteraction) => {
         if (interaction.isButton()) {
-
-            if (!(await Utils.InteractionUserCheck(interaction))) return;
-
             const CustomID = interaction.customId.split('$')[0];
             const Data = JSON.parse(interaction.customId.split('$')[1]);
     
@@ -76,7 +73,7 @@ defineEvent({
 defineEvent({
     Event: "interactionCreate",
     Name: 'Inventory Modal Submit',
-    Once: false,
+    
     Execute: async (interaction: ModalSubmitInteraction) => {
         if (interaction.isModalSubmit()) {
             const CustomID = interaction.customId.split('$')[0];

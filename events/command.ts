@@ -6,7 +6,7 @@ import defineEvent from "../resources/Bot/events.js";
 defineEvent({
     Event: "interactionCreate",
     Name: "Command Handling",
-    Once: false,
+    
     Execute: async (interaction: ChatInputCommandInteraction) => {
         if (interaction.isCommand()) await (Commands.filter((Command) => {
             return Command.Name === interaction.command?.name;
