@@ -1,7 +1,8 @@
 import { ChatInputCommandInteraction } from "discord.js";
 
-import { Commands } from "../resources/Bot/commands.js";
 import defineEvent from "../resources/Bot/events.js";
+
+import { Commands } from "../resources/Bot/commands.js";
 
 defineEvent({
     Event: "interactionCreate",

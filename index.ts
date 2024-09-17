@@ -5,6 +5,7 @@ import Game from "./resources/Game.js";
 import { Utils } from "./resources/Utilities.js";
 
 import "dotenv/config";
+import DataBase from "./databases/Database.js";
 
 export const VanillaGame: Game = {
     Configuration: {
@@ -52,8 +53,7 @@ export const VanillaGame: Game = {
 
 await ClientLogin({
     BotToken: process.env.BOT_TOKEN ?? "",
-    CommandsDir: '/commands',
-    EventsDir: '/events',
+    ModulesDir: '/modules',
     ClientOptions: {
         intents: [
             GatewayIntentBits.Guilds

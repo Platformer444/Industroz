@@ -1,10 +1,10 @@
 import { AnySelectMenuInteraction, ButtonInteraction, InteractionReplyOptions, InteractionUpdateOptions, StringSelectMenuInteraction, User } from "discord.js"
 
-import { World } from "commands/world.js"
+import { World } from "modules/world.js"
 import { Biome, Item, Tile } from "./Data.js"
 import { NavigationButtonData } from "./Utilities.js"
 import { SelectMenuOption } from "./Bot/components.js";
-import { Settings } from "commands/settings.js";
+import { Settings } from "modules/settings.js";
 
 type InteractionResponse = InteractionReplyOptions & InteractionUpdateOptions;
 
@@ -55,9 +55,9 @@ export default interface Game {
 
             EditInventory: (InventoryList: World["Inventory"], Item: number, AddorRemove: "Add" | "Remove", Quantity: number) => World["Inventory"],
             DisplayItemCost: (ID: number, List: "Tiles" | "Items", Detail: "SellDetails" | "BuyingDetails" | "Upgrade", Emoji?: boolean, UpgradeLevel?: number) => string,
-            GetUpgradeCost: (Buildable: number, Level: number) => { Item: number, Quantity: number }[] | undefined
-            Pay: (Inventory: World["Inventory"], Items: { Item: number, Quantity: number }[]) => [World["Inventory"], string]
-            InteractionUserCheck: (Interaction: ButtonInteraction | AnySelectMenuInteraction) => Promise<boolean>;
+            GetUpgradeCost: (Buildable: number, Level: number) => { Item: number, Quantity: number }[] | undefined,
+            Pay: (Inventory: World["Inventory"], Items: { Item: number, Quantity: number }[]) => [World["Inventory"], string],
+            InteractionUserCheck: (Interaction: ButtonInteraction | AnySelectMenuInteraction) => Promise<boolean>,
         }
     }
 };

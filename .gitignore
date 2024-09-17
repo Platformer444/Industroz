@@ -3,4 +3,4 @@ build/
 tests/
 
 .env
-database.sqlite
+*.sqlite

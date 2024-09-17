@@ -1,10 +1,12 @@
 import { APIEmbed, time } from "discord.js";
 
-import { Utils } from "../resources/Utilities.js";
-import defineCommand from "./../resources/Bot/commands.js";
-import { Item, Items } from "../resources/Data.js";
+import defineCommand from "../resources/Bot/commands.js";
+
 import { WorldDatabase } from "./world.js";
 import { SettingsDatabase } from "./settings.js";
+
+import { Utils } from "../resources/Utilities.js";
+import { Item, Items } from "../resources/Data.js";
 
 defineCommand({
     Name: 'shop',
