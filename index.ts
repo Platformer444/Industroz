@@ -1,11 +1,12 @@
 import { ActivityType, GatewayIntentBits } from "discord.js";
 
-import { ClientLogin } from "./resources/Bot/client.js";
+import { client, ClientLogin } from "./resources/Bot/client.js";
 import Game from "./resources/Game.js";
 import { Utils } from "./resources/Utilities.js";
+import { Events } from "./resources/Bot/events.js";
 
-import "dotenv/config";
 import DataBase from "./databases/Database.js";
+import "dotenv/config";
 
 export const VanillaGame: Game = {
     Configuration: {
@@ -67,3 +68,5 @@ await ClientLogin({
         }
     }
 });
+
+for (const Event of Events) client.on(Event["Event"], async (...args) => { await Event.Execute(...args); });

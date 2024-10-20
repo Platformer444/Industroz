@@ -33,7 +33,7 @@ export async function ClientLogin(
 
     console.log(chalk.blueBright(`${chalk.bold(chalk.greenBright('Modules'))} Defined!\n`));
 
-    client.application?.commands.set(Commands.map((Command) => {
+    await client.application?.commands.set(Commands.map((Command) => {
         return {
             type: 1,
             name: Command["Name"],
@@ -45,9 +45,6 @@ export async function ClientLogin(
             ]
         }
     }));
-
-    for (const Event of Events) client.on(Event["Event"], async (...args) => { await Event.Execute(...args); });
-    for (const Event of Events) client.off(Event["Event"], async (...args) => { await Event.Execute(...args); });
 
     console.log(chalk.blueBright(`${chalk.magentaBright('Client')} Successfully Logged In with ID ${chalk.magentaBright(client.user?.id)}!`));
     console.log();

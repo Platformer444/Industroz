@@ -203,12 +203,16 @@ defineEvent({
                             const World = await WorldDatabase.Get(interaction.user.id);
                             const Buildable = Tiles.filter((Tile) => { return Tile["Name"].replaceAll(' ', '_').toLowerCase() === interaction.values[0] })[0];
         
-                            if (Buildable["BuildableOn"]) if (World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]]["Tile"] !== Buildable["BuildableOn"]) {
-                                const Tile = Tiles.filter((Tile) => { return Tile["ID"] === Buildable["BuildableOn"] })[0];
-                                return await interaction.reply({
-                                    content: `${Buildable["Emoji"]} ${Buildable["Name"]} can be Build on ${Tile["Emoji"]} ${Tile["Name"]} only!`,
-                                    ephemeral: true
-                                });
+                            if (Buildable["BuildableOn"]) {
+                                console.log('Ha');
+                                if (World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]]["Tile"] !== Buildable["BuildableOn"]) {
+                                    console.log('Ha');
+                                    const Tile = Tiles.filter((Tile) => { return Tile["ID"] === Buildable["BuildableOn"] })[0];
+                                    return await interaction.reply({
+                                        content: `${Buildable["Emoji"]} ${Buildable["Name"]} can be Build on ${Tile["Emoji"]} ${Tile["Name"]} only!`,
+                                        ephemeral: true
+                                    });
+                                }
                             }
 
                             const [NewInventory, Message] = Utils.Pay(World["Inventory"], Buildable["BuyingDetails"] ?? []);

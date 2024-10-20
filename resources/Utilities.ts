@@ -383,7 +383,6 @@ class Util {
         defineEvent({
             Event: "interactionCreate",
             Name: `${Options["Title"]} Paginate Event`,
-            
             Execute: async (interaction: ButtonInteraction) => {
                 if (interaction.isButton()) {
                     const PaginateID = interaction.customId.split('$')[0];
@@ -400,8 +399,6 @@ class Util {
         defineEvent({
             Event: "interactionCreate",
             Name: `${Options["Title"]} StringSelectMenu Event`,
-            EndTime: 1000,
-            
             Execute: async (interaction: StringSelectMenuInteraction) => {
                 if (interaction.isStringSelectMenu()) {
                     if (interaction.customId.split('$')[0] === `${Options["Title"]}StringSelect`) return await SelectInteractionExecute(interaction);
