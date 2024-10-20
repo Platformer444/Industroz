@@ -19,5 +19,7 @@ export default function defineEvent(Event: Event) {
     if (ExistingEvent) {
         Events.push(Event);
         console.log(chalk.blueBright(`\tEvent ${chalk.cyanBright(Event["Name"])} Defined!\n`));
+
+        if (client) client.on(Event["Event"], async (...args) => { await Event.Execute(...args); });
     }
 }

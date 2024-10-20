@@ -2,11 +2,11 @@ import { APIActionRowComponent, APIEmbed, APIMessageActionRowComponent, AnySelec
 import { stripIndent } from "common-tags";
 
 import { Biome, Biomes, Item, Items, SETTINGS, Tiles } from "./Data.js";
-import { World, WorldDatabase } from "../modules/world.js";
+import { World, WorldDatabase } from "../commands/world.js";
 import { defineComponents, Component, SelectMenuOption } from "./Bot/components.js";
 import defineEvent from "./Bot/events.js";
-import { Settings, SettingsDatabase } from "../modules/settings.js";
-import { MarketplaceDatabase } from "../modules/marketplace.js";
+import { Settings, SettingsDatabase } from "../commands/settings.js";
+import { MarketplaceDatabase } from "../commands/marketplace.js";
 
 export interface NavigationButtonData {
     User: string,

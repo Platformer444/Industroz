@@ -3,7 +3,7 @@ import { CategoryChannel, ChannelType } from "discord.js";
 import { client } from "../resources/Bot/client.js";
 import defineEvent from "../resources/Bot/events.js";
 
-import { MarketplaceDatabase } from "./marketplace.js";
+import { MarketplaceDatabase } from "../commands/marketplace.js";
 
 import "dotenv/config.js";
 

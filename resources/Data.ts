@@ -1,7 +1,7 @@
 import { StringSelectMenuInteraction } from "discord.js";
 
 import { NavigationButtonData, Utils } from "./Utilities.js";
-import { Settings } from "modules/settings.js";
+import { Settings } from "commands/settings.js";
 
 type ItemQuantityPair = { Item: number, Quantity: number };
 

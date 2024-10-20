@@ -1,4 +1,4 @@
-import { APIBaseComponent, ButtonInteraction, ButtonStyle, ChannelSelectMenuInteraction, ChannelType, ComponentType, MentionableSelectMenuBuilder, RoleSelectMenuInteraction, StringSelectMenuInteraction, TextInputStyle, UserSelectMenuInteraction } from "discord.js";
+import { ButtonStyle, ChannelType, ComponentType, TextInputStyle } from "discord.js";
 
 export interface Component {
     ComponentType: keyof typeof ComponentType,

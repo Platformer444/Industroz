@@ -12,26 +12,37 @@ export let client: Client = undefined as any;
 export async function ClientLogin(
     LoginOptions: {
         BotToken: string,
-        ModulesDir: string,
+        ModulesDir: [string, string],
         ClientOptions: ClientOptions
     }
 ): Promise<Client> {
     console.log();
-    const ProjectDir: string = path.join(path.dirname(fileURLToPath(import.meta.url)), '../../');
 
     client = new Client<true>(LoginOptions["ClientOptions"]);
 
     await client.login(LoginOptions["BotToken"]);
 
-    console.log(chalk.blueBright(`Defining ${chalk.bold(chalk.greenBright('Modules'))}...\n`));
+    const ProjectDir: string = path.join(path.dirname(fileURLToPath(import.meta.url)), '../../');
 
-    const ModuleFiles: string[] = fs.readdirSync(path.join(ProjectDir, LoginOptions["ModulesDir"]));
-    for (const ModuleFile of ModuleFiles) {
-        if (!ModuleFile.endsWith('.js')) continue;
-        await import(pathToFileURL(path.join(ProjectDir, LoginOptions["ModulesDir"], ModuleFile)).toString());
+    console.log(chalk.blueBright(`Defining ${chalk.bold(chalk.greenBright('Commands'))}...\n`));
+
+    const CommandFiles: string[] = fs.readdirSync(path.join(ProjectDir, LoginOptions["ModulesDir"][0]));
+    for (const CommandFile of CommandFiles) {
+        if (!CommandFile.endsWith('.js')) continue;
+        await import(pathToFileURL(path.join(ProjectDir, LoginOptions["ModulesDir"][0], CommandFile)).toString());
     }
 
-    console.log(chalk.blueBright(`${chalk.bold(chalk.greenBright('Modules'))} Defined!\n`));
+    console.log(chalk.blueBright(`${chalk.bold(chalk.greenBright('Commands'))} Defined!\n`));
+
+    console.log(chalk.blueBright(`Defining ${chalk.bold(chalk.greenBright('Events'))}...\n`));
+
+    const EventFiles: string[] = fs.readdirSync(path.join(ProjectDir, LoginOptions["ModulesDir"][1]));
+    for (const EventFile of EventFiles) {
+        if (!EventFile.endsWith('.js')) continue;
+        await import(pathToFileURL(path.join(ProjectDir, LoginOptions["ModulesDir"][1], EventFile)).toString());
+    }
+
+    console.log(chalk.blueBright(`${chalk.bold(chalk.greenBright('Events'))} Defined!\n`));
 
     await client.application?.commands.set(Commands.map((Command) => {
         return {

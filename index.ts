@@ -5,8 +5,9 @@ import Game from "./resources/Game.js";
 import { Utils } from "./resources/Utilities.js";
 import { Events } from "./resources/Bot/events.js";
 
-import DataBase from "./databases/Database.js";
 import "dotenv/config";
+import DataBase from "./databases/Database.js";
+import { World } from "./commands/world.js";
 
 export const VanillaGame: Game = {
     Configuration: {
@@ -54,7 +55,7 @@ export const VanillaGame: Game = {
 
 await ClientLogin({
     BotToken: process.env.BOT_TOKEN ?? "",
-    ModulesDir: '/modules',
+    ModulesDir: ['/commands', '/events'],
     ClientOptions: {
         intents: [
             GatewayIntentBits.Guilds
@@ -68,5 +69,3 @@ await ClientLogin({
         }
     }
 });
-
-for (const Event of Events) client.on(Event["Event"], async (...args) => { await Event.Execute(...args); });
