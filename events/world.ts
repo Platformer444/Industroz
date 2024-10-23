@@ -83,9 +83,11 @@ defineEvent({
                                 { Label: Item["Name"], Description: CostString.includes('undefined') ? Item["Description"] : CostString, Emoji: Item["Emoji"] }
                             ];
                         },
-                        async (interaction) => {
+                        async (interaction, Data) => {
                             const World = await WorldDatabase.Get(interaction.user.id);
                             const Buildable = Tiles.filter((Tile) => { return Tile["Name"].replaceAll(' ', '_').toLowerCase() === interaction.values[0] })[0];
+
+                            console.log(World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]]["Tile"]);
         
                             if (Buildable["BuildableOn"]) {
                                 if (World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]]["Tile"] !== Buildable["BuildableOn"]) {
@@ -122,7 +124,8 @@ defineEvent({
                         {
                             Embed: false,
                             Title: 'BuildablesSelect',
-                            Page: 1
+                            Page: 1,
+                            SelectMenuData: Data
                         }
                     )["components"] ?? []),
                     defineComponents(
@@ -161,7 +164,7 @@ defineEvent({
                                     { Label: _Item["Name"], Description: _Item["Description"], Emoji: _Item["Emoji"] }
                                 ];
                             },
-                            async (interaction) => {
+                            async (interaction, Data) => {
                                 const world = await WorldDatabase.Get(Data["User"]);
                                 const Item = Items.filter((Item) => { return Item["Name"].replaceAll(' ', '_').toLowerCase() === interaction.values[0]; })[0];
             
@@ -176,7 +179,8 @@ defineEvent({
                             {
                                 Embed: false,
                                 Title: 'ItemUse',
-                                Page: 1
+                                Page: 1,
+                                SelectMenuData: Data
                             }
                         )["components"] ?? []),
                         defineComponents(

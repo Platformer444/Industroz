@@ -372,12 +372,13 @@ class Util {
     BuildListEmbed<ListItemType>(
         List: ListItemType[],
         Content: (Item: ListItemType, Index?: number, List?: ListItemType[]) => [string, SelectMenuOption],
-        SelectInteractionExecute: (interaction: StringSelectMenuInteraction) => any,
+        SelectInteractionExecute: (interaction: StringSelectMenuInteraction, Data?: any) => any,
         Options: {
+            Page: number
+            Title?: string,
             Embed?: boolean,
             SelectMenu?: boolean,            
-            Title?: string,
-            Page: number
+            SelectMenuData?: any
         }
     ): InteractionResponse {
         defineEvent({
@@ -401,7 +402,10 @@ class Util {
             Name: `${Options["Title"]} StringSelectMenu Event`,
             Execute: async (interaction: StringSelectMenuInteraction) => {
                 if (interaction.isStringSelectMenu()) {
-                    if (interaction.customId.split('$')[0] === `${Options["Title"]}StringSelect`) return await SelectInteractionExecute(interaction);
+                    const CustomID = interaction.customId.split('$')[0];
+                    const Data = JSON.parse(interaction.customId.split('$')[1]);
+
+                    if (CustomID === `${Options["Title"]}StringSelect`) return await SelectInteractionExecute(interaction, Data);
                 }
             }
         });
@@ -436,7 +440,8 @@ class Util {
                                 ) return Item;
                                 else return;
                             })
-                            .map((Item) => { return Content(Item, List.indexOf(Item), List)[1]; })
+                            .map((Item) => { return Content(Item, List.indexOf(Item), List)[1]; }),
+                        Data: Options["SelectMenuData"] ?? {}
                     }
                 )] : []),
                 defineComponents(
