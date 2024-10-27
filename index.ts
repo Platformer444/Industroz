@@ -1,13 +1,10 @@
 import { ActivityType, GatewayIntentBits } from "discord.js";
 
-import { client, ClientLogin } from "./resources/Bot/client.js";
+import { ClientLogin } from "./resources/Bot/client.js";
 import Game from "./resources/Game.js";
 import { Utils } from "./resources/Utilities.js";
-import { Events } from "./resources/Bot/events.js";
 
 import "dotenv/config";
-import DataBase from "./databases/Database.js";
-import { World } from "./commands/world.js";
 
 export const VanillaGame: Game = {
     Configuration: {
@@ -42,7 +39,6 @@ export const VanillaGame: Game = {
             BuildSettingEmbed: Utils.BuildSettingEmbed,
             BuildMarketplaceUserEmbed: Utils.BuildMarketplaceUserEmbed,
             BuildMarketplaceOfferEmbed: Utils.BuildMarketplaceOfferEmbed,
-            BuildMarketplaceManageEmbed: Utils.BuildMarketplaceManageEmbed,
 
             EditInventory: Utils.EditInventory,
             DisplayItemCost: Utils.DisplayItemCost,

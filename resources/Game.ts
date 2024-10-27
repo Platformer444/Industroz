@@ -51,7 +51,6 @@ export default interface Game {
             BuildSettingEmbed: (Setting: keyof Settings, Value: string) => InteractionResponse,
             BuildMarketplaceUserEmbed: (User: string) => Promise<InteractionResponse>,
             BuildMarketplaceOfferEmbed: (User: string, Interactor: string, Offer: number) => Promise<InteractionResponse>,
-            BuildMarketplaceManageEmbed: (User: string) => Promise<InteractionResponse>,
 
             EditInventory: (InventoryList: World["Inventory"], Item: number, AddorRemove: "Add" | "Remove", Quantity: number) => World["Inventory"],
             DisplayItemCost: (ID: number, List: "Tiles" | "Items", Detail: "SellDetails" | "BuyingDetails" | "Upgrade", Emoji?: boolean, UpgradeLevel?: number) => string,

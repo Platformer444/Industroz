@@ -1,6 +1,7 @@
-import { InteractionReplyOptions, InteractionUpdateOptions } from "discord.js";
+import { APIActionRowComponent, APIEmbed, APIMessageActionRowComponent, InteractionReplyOptions, InteractionUpdateOptions, time } from "discord.js";
 
 import defineCommand from "../resources/Bot/commands.js";
+import { defineComponents } from "../resources/Bot/components.js";
 
 import DataBase from "../databases/Database.js";
 import { SettingsDatabase } from "./settings.js";
@@ -22,7 +23,7 @@ interface Marketplace {
 export const MarketplaceDatabase: DataBase<Marketplace> = new DataBase('Marketplace');
 await MarketplaceDatabase.Init();
 
-export async function Marketplace(): Promise<InteractionReplyOptions & InteractionUpdateOptions> {
+export async function MarketplaceEmbed(): Promise<InteractionReplyOptions & InteractionUpdateOptions> {
     const Marketplace = await MarketplaceDatabase.Get('Global');
     const Settings = await SettingsDatabase.GetAll();
 
@@ -78,15 +79,66 @@ defineCommand({
         }
     ],
     Execute: async (interaction) => {
-        switch (interaction.options.getSubcommand(true)) {
-                    case 'view':
-                        const User = interaction.options.getUser('user');
+        if (interaction.options.getSubcommand(true) === 'view') {
+            const User = interaction.options.getUser('user');
 
-                        if (User === null) return await interaction.reply(await Marketplace());
-                        else return await interaction.reply(await Utils.BuildMarketplaceUserEmbed(User.id));
+            const Marketplace = await MarketplaceDatabase.Get('Global');
 
-            case 'manage':
-                return await interaction.reply(await Utils.BuildMarketplaceManageEmbed(interaction.user.id));
+            Marketplace["Offers"].forEach((Offer, Index) => {
+                Offer["Items"].forEach((Item, Index) => {
+                    if (Date.now() >= Item["OfferEndTime"]) Offer["Items"].splice(Index, 1);
+                });
+
+                if (Offer["Items"].length === 0) Marketplace["Offers"].splice(Index, 1);
+            });
+
+            await MarketplaceDatabase.Set('Global', Marketplace);
+
+            if (User === null) return await interaction.reply(await MarketplaceEmbed());
+            else return await interaction.reply(await Utils.BuildMarketplaceUserEmbed(User.id));
+        }
+        else if (interaction.options.getSubcommand(true) === 'manage') {
+            const Marketplace = await MarketplaceDatabase.Get('Global');
+            const Settings = await SettingsDatabase.GetAll();
+
+            let UserOffers = Marketplace["Offers"].filter((UserOffers) => { return UserOffers["User"] === interaction.user.id; })[0];
+            if (UserOffers === undefined) UserOffers = { User: interaction.user.id, Items: [] };
+
+            const Reply = Utils.BuildListEmbed<typeof UserOffers["Items"][0]>(
+                UserOffers["Items"],
+                (Item, Index) => {
+                    const OfferItem = Items.filter((OfferItem) => { return OfferItem["ID"] === Item["Item"]["Item"]; })[0];
+                    const BuyItem = Items.filter((BuyItem) => { return BuyItem["ID"] === Item["Cost"]["Item"]; })[0];
+
+                    const ItemCostString = {
+                        Emoji: `${BuyItem["Emoji"]} ${BuyItem["Name"]} ×${Item["Cost"]["Quantity"]} → ${OfferItem["Emoji"]} ${OfferItem["Name"]} ×${Item["Item"]["Quantity"]}`,
+                        NoEmoji: `${BuyItem["Name"]} ×${Item["Cost"]["Quantity"]} → ${OfferItem["Name"]} ×${Item["Item"]["Quantity"]}`
+                    };
+                    const EndsAtString = `(Ends at **${String(time(Math.floor(Item["OfferEndTime"] / 1000), "F"))}**)`;
+                    return [
+                        `${(Index as number) + 1}. ${ItemCostString["Emoji"]} ${EndsAtString}`,
+                        { Label: ItemCostString["NoEmoji"], Description: `Ends at ${new Date(Item["OfferEndTime"]).toUTCString()}`, Emoji: OfferItem["Emoji"] }
+                    ];
+                },
+                (interaction) => {},
+                { SelectMenu: UserOffers["Items"]["length"] !== 0, Title: Settings[interaction.user.id]["DisplayName"], Page: 1 }
+            );
+
+            if (UserOffers["Items"].length === 0) (Reply["embeds"] as APIEmbed[])[0]["description"] = `You do not have any Offers Available in the Marketplace!`;
+
+            (Reply["components"] as APIActionRowComponent<APIMessageActionRowComponent>[]).splice(
+                0, 0,
+                defineComponents(
+                    {
+                        ComponentType: "Button",
+                        CustomID: 'OfferAdd',
+                        Label: 'Add New Offer',
+                        ButtonStyle: "Success"
+                    }
+                )
+            );
+
+            await interaction.reply(Reply);
         }
     }
 });

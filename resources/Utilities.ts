@@ -754,48 +754,6 @@ class Util {
         };
     }
 
-    async BuildMarketplaceManageEmbed(User: string): Promise<InteractionResponse> {
-        const Marketplace = await MarketplaceDatabase.Get('Global');
-        const Settings = await SettingsDatabase.GetAll();
-
-        let UserOffers = Marketplace["Offers"].filter((UserOffers) => { return UserOffers["User"] === User; })[0];
-        if (UserOffers === undefined) UserOffers = { User: User, Items: [] };
-
-        const Reply = this.BuildListEmbed<typeof UserOffers["Items"][0]>(
-            UserOffers["Items"],
-            (Item, Index) => {
-                const OfferItem = Items.filter((OfferItem) => { return OfferItem["ID"] === Item["Item"]["Item"]; })[0];
-                const BuyItem = Items.filter((BuyItem) => { return BuyItem["ID"] === Item["Cost"]["Item"]; })[0];
-
-                const ItemCostString = `${BuyItem["Emoji"]} ${BuyItem["Name"]} ×${Item["Cost"]["Quantity"]} → ${OfferItem["Emoji"]} ${OfferItem["Name"]} ×${Item["Item"]["Quantity"]}`;
-                const EndsAtString = `(Ends at **${String(time(Math.floor(Item["OfferEndTime"] / 1000), "F"))}**)`;
-                return [
-                    stripIndent`${(Index as number) + 1}. ${ItemCostString} ${EndsAtString}`,
-                    { Label: 'Item' }
-                ];
-            },
-            (interaction) => {},
-            { SelectMenu: UserOffers["Items"]["length"] !== 0, Title: Settings[User]["DisplayName"], Page: 1 }
-        );
-
-        if (UserOffers["Items"].length === 0) (Reply["embeds"] as APIEmbed[])[0]["description"] = `You do not have any Offers Available in the Marketplace!`;
-
-        (Reply["components"] as APIActionRowComponent<APIMessageActionRowComponent>[]).splice(
-            0, 0,
-            defineComponents(
-                {
-                    ComponentType: "Button",
-                    CustomID: 'OfferAdd',
-                    Label: 'Add New Offer',
-                    ButtonStyle: "Success",
-                    Data: { User: User }
-                }
-            )
-        )
-
-        return Reply;
-    }
-
     // Miscellaneous Utils
     EditInventory(InventoryList: World["Inventory"], Item: number, AddorRemove: "Add" | "Remove", Quantity: number): World["Inventory"] {
         const NewInventory: World["Inventory"] = [];
@@ -882,7 +840,14 @@ class Util {
             ephemeral: true
         };
         if (Interaction.isButton() || Interaction.isAnySelectMenu()) {
-            if (Message === null) {
+            if (Reference === null) {
+                if (Interaction.user.id !== (Message.interaction?.user.id as string)) {
+                    await Interaction.reply(UnusableResponse);
+                    return false;
+                }
+                else return true;
+            }
+            else {
                 const Guild = await Interaction.client.guilds.fetch(Reference?.guildId as string);
                 const Channel = (await Guild.channels.fetch(Reference?.channelId as string)) as TextChannel;
                 const RepliedMessage = await Channel.messages.fetch(Reference?.messageId as string);
@@ -893,11 +858,6 @@ class Util {
                     return false;
                 }
             }
-            else if (Interaction.user.id !== (Message.interaction?.user.id as string)) {
-                await Interaction.reply(UnusableResponse);
-                return false;
-            }
-            else return true;
         }
         else return true;
     }

@@ -3,8 +3,6 @@ import { CategoryChannel, ChannelType } from "discord.js";
 import { client } from "../resources/Bot/client.js";
 import defineEvent from "../resources/Bot/events.js";
 
-import { MarketplaceDatabase } from "../commands/marketplace.js";
-
 import "dotenv/config.js";
 
 defineEvent(
@@ -36,8 +34,6 @@ defineEvent(
                     }
                 });
             }
-
-            await MarketplaceDatabase.Set('Global', { Offers: [{ User: '1150357997491593247', Items: [{ Item: { Item: 1, Quantity: 1 }, Cost: { Item: 1, Quantity: 1 }, OfferEndTime: Date.now() + (3 * 24 * 60 * 60 * 1000) }] }] }, true);
         }
     }
 );
