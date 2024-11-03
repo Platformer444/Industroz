@@ -42,7 +42,7 @@ export const Tiles: Tile[] = [
         ID: 1,
         Name: 'Water',
         Description: 'A Pool of a Covalent Chemical Compound formed when Two Atoms of Hydrogen and One Atom of Oxygen share their Electrons',
-        Emoji: '<:Water:1178629196822622289>',
+        Emoji: '<:Water:1302578527329320960>',
         Spawnable: 7
     },
     {
