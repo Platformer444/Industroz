@@ -127,12 +127,18 @@ export const Tiles: Tile[] = [
 export const Biomes: Biome[] = [
     {
         ID: 1,
+        Name: 'Plains',
+        Tiles: [ 2, 5 ],
+        SpawningChance: 1
+    },
+    {
+        ID: 2,
         Name: 'Forest',
         Tiles: [ 1, 5 ],
         SpawningChance: 9
     },
     {
-        ID: 2,
+        ID: 3,
         Name: 'Stony Fields',
         Tiles: [ 7, 8 ],
         SpawningChance: 8

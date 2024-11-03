@@ -20,24 +20,48 @@ class Util {
     CreateWorld(Width: number, Height: number, DefaultOutpostPosition: [number, number] = [(Height / 2) - 1, (Width / 2) - 1]): World["Islands"][0]["Tiles"] {
         const World: World["Islands"][0]["Tiles"] = [];
 
-        const _Biomes: Biome[] = [];
-        let BiomeWidth: number = 10;
-        let BiomeHeight: number = 10;
+        const _Biomes: number[][] = [];
+        let BiomeWidth: number = 5;
+        let BiomeHeight: number = 5;
 
-        while (_Biomes["length"] < (Width * Height) / (BiomeWidth * BiomeHeight)) Biomes.forEach((Biome) => {
-            if (Utils.RandomNumber(0, 10 - (Biome["SpawningChance"] ?? 10)) === 0) _Biomes.push(Biome);
-        });
+        for (let i = 1; i <= Height / BiomeHeight; i++) {
+            const __Biomes: number[] = [];
+
+            for (let j = 1; j <= Width / BiomeWidth; j++) {
+                for (const Biome of Biomes) {
+                    if (this.RandomNumber(1, this.RandomNumber(10, 20) - Biome["SpawningChance"]) === 1) {
+                        __Biomes.push(Biome["ID"]);
+                        break;
+                    }
+                }
+            }
+
+            if (__Biomes.length !== Width / BiomeWidth) {
+                __Biomes.push(...(new Array((Width / BiomeWidth) - __Biomes.length).fill(0)))
+            }
+            _Biomes.push(__Biomes);
+        }
 
         for (let i = 0; i < Height; i++) {
             const WorldChunk: World["Islands"][0]["Tiles"][0] = [];
 
             for (let j = 0; j < Width; j++) {
-                const Biome = _Biomes[Math.floor(j / BiomeWidth) + Math.floor(i / BiomeHeight)] ?? { Tiles: [ 2 ] };
+                let Tile: number | undefined;
 
-                const Tile = Biome["Tiles"].filter((Tile) => {
-                    const _Tile = Tiles.filter((_Tile) => { return _Tile["ID"] === Tile })[0];
-                    return Utils.RandomNumber(0, 10 - (_Tile["Spawnable"] ?? 10)) === 0;
-                })[0];
+                const Biome = Biomes.filter((Biome) => {
+                    return Biome["ID"] === _Biomes[Math.floor(i / BiomeHeight)][Math.floor(j / BiomeWidth)];
+                })[0] ?? { Tiles: [ 2 ] };
+
+                for (let _Tile of Biome["Tiles"]) {
+                    const __Tile = Tiles.filter((__Tile) => { return __Tile["ID"] === _Tile })[0];
+
+                    if (__Tile["Spawnable"]) {
+                        if (this.RandomNumber(1, (10 - __Tile["Spawnable"])) === 1) {
+                            Tile = _Tile;
+                            break;
+                        }
+                    }
+                }
 
                 if (!Tile) WorldChunk.push({ Tile: 2 });
                 else WorldChunk.push({ Tile: Tile });
