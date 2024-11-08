@@ -6,7 +6,7 @@ import defineEvent from "./../resources/Bot/events.js";
 
 import { SettingsDatabase } from "../commands/settings.js";
 import { WorldDatabase, World } from "../commands/world.js";
-import { Items, Tile, Tiles } from "./../resources/Data.js";
+import { GameData, Tile } from "./../resources/Data.js";
 import { Utils } from "./../resources/Utilities.js";
 
 defineEvent({
@@ -36,7 +36,7 @@ defineEvent({
                                 Default: true
                             }],
                             Shop: {
-                                Items: Items.filter((Item) => { return Item["BuyingDetails"] }).map((Item) => {
+                                Items: GameData.Items.filter((Item) => { return Item["BuyingDetails"] }).map((Item) => {
                                     return {
                                         Item: Item["ID"],
                                         Quantity: 0
@@ -75,7 +75,7 @@ defineEvent({
             else if (CustomID === "Build") return await interaction.update({
                 components: [
                     ...(Utils.BuildListEmbed<Tile>(
-                        Tiles.filter((Tile) => { return Tile["Buildable"] ?? false }),
+                        GameData.Tiles.filter((Tile) => { return Tile["Buildable"] ?? false }),
                         (Item) => {
                             const CostString = Utils.DisplayItemCost(Item["ID"], "Tiles", "BuyingDetails");
                             return [
@@ -85,13 +85,13 @@ defineEvent({
                         },
                         async (interaction, Data) => {
                             const World = await WorldDatabase.Get(interaction.user.id);
-                            const Buildable = Tiles.filter((Tile) => { return Tile["Name"].replaceAll(' ', '_').toLowerCase() === interaction.values[0] })[0];
+                            const Buildable = GameData.Tiles.filter((Tile) => { return Tile["Name"].replaceAll(' ', '_').toLowerCase() === interaction.values[0] })[0];
 
                             console.log(World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]]["Tile"]);
         
                             if (Buildable["BuildableOn"]) {
                                 if (World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]]["Tile"] !== Buildable["BuildableOn"]) {
-                                    const Tile = Tiles.filter((Tile) => { return Tile["ID"] === Buildable["BuildableOn"] })[0];
+                                    const Tile = GameData.Tiles.filter((Tile) => { return Tile["ID"] === Buildable["BuildableOn"] })[0];
                                     return await interaction.reply({
                                         content: `${Buildable["Emoji"]} ${Buildable["Name"]} can be Build on ${Tile["Emoji"]} ${Tile["Name"]} only!`,
                                         ephemeral: true
@@ -144,7 +144,7 @@ defineEvent({
             else if (CustomID === "ItemUse") {
                 const Inventory = (await WorldDatabase.Get(interaction.user.id))["Inventory"];
                 const UsableItems = Inventory.filter((InvItem) => {
-                    const Item = Items.filter((Item) => { return Item["ID"] === InvItem["Item"] })[0];
+                    const Item = GameData.Items.filter((Item) => { return Item["ID"] === InvItem["Item"] })[0];
                     if (Item["Usable"]) return InvItem;
                 });
 
@@ -157,7 +157,7 @@ defineEvent({
                         ...(Utils.BuildListEmbed<World["Inventory"][0]>(
                             UsableItems,
                             (Item) => {
-                                const _Item = Items.filter((_Item) => { return _Item["ID"] === Item["Item"] })[0];
+                                const _Item = GameData.Items.filter((_Item) => { return _Item["ID"] === Item["Item"] })[0];
 
                                 return [
                                     '',
@@ -166,7 +166,7 @@ defineEvent({
                             },
                             async (interaction, Data) => {
                                 const world = await WorldDatabase.Get(Data["User"]);
-                                const Item = Items.filter((Item) => { return Item["Name"].replaceAll(' ', '_').toLowerCase() === interaction.values[0]; })[0];
+                                const Item = GameData.Items.filter((Item) => { return Item["Name"].replaceAll(' ', '_').toLowerCase() === interaction.values[0]; })[0];
             
                                 if (Item.Usable) {
                                     await Item.Usable(interaction, Data);
@@ -222,7 +222,7 @@ defineEvent({
 
                 World["Islands"][Data["Island"] - 1]["Tiles"].forEach((_Tiles, Index1) => {
                     _Tiles.filter((Tile) => { return Tile["Component"]; }).forEach((Tile) => {
-                        const _Tile = Tiles.filter((tile) => { return tile["ID"] === Tile["Tile"] })[0];
+                        const _Tile = GameData.Tiles.filter((tile) => { return tile["ID"] === Tile["Tile"] })[0];
 
                         _Tile["Production"]?.forEach((Production) => {
                             const SalaryPaid = (Date.now() - (Tile["Component"]?.LastSalaryPay as number)) / (1000 * 60 * 60 * 24) < 1;
@@ -268,11 +268,11 @@ defineEvent({
 
                 let Message = `**Production for Island ${Data["Island"]}**`;
                 Productions.forEach((Production) => {
-                    const Buildable = Tiles.filter((Tile) => { return Tile["ID"] === Production["Buildable"] })[0];
+                    const Buildable = GameData.Tiles.filter((Tile) => { return Tile["ID"] === Production["Buildable"] })[0];
                     let MessageLine = `${Buildable["Emoji"]} ([${Production["Location"]}]) →`;
 
                     if (Production["Production"][0] !== "Hoarded") Production["Production"].forEach((Produce) => {
-                        const Item = Items.filter((Item) => { return Item["ID"] === (Produce as { Item: number, Amount: number })["Item"] })[0];
+                        const Item = GameData.Items.filter((Item) => { return Item["ID"] === (Produce as { Item: number, Amount: number })["Item"] })[0];
                         MessageLine += `${Item["Emoji"]} +${(Produce as { Item: number, Amount: number })["Amount"]}`;
                     });
                     else MessageLine += ` *Stocks Hoarded! Pay Salary to the Workers to Receive!*`;
@@ -338,7 +338,7 @@ defineEvent({
 
                     const NewInventory = Utils.EditInventory(World["Inventory"], 1, "Remove", World["Inventory"]["length"] * 100000);
                     if (NewInventory["length"] === 0) {
-                        const Item = Items.filter((Item) => { return Item["ID"] === 1 })[0];
+                        const Item = GameData.Items.filter((Item) => { return Item["ID"] === 1 })[0];
                         return await interaction.reply({
                             content: `You don't have Enough ${Item["Emoji"]}${Utils.Plural(Item["Name"])} to Create a New Island!`,
                             ephemeral: true
@@ -354,7 +354,7 @@ defineEvent({
                                     Default: true
                                 }],
                                 Shop: {
-                                    Items: Items.filter((Item) => { return Item["BuyingDetails"] }).map((Item) => {
+                                    Items: GameData.Items.filter((Item) => { return Item["BuyingDetails"] }).map((Item) => {
                                         return {
                                             Item: Item["ID"],
                                             Quantity: 0

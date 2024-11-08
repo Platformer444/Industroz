@@ -7,7 +7,7 @@ import DataBase from "../databases/Database.js";
 import { SettingsDatabase } from "./settings.js";
 
 import { Utils } from "../resources/Utilities.js";
-import { Items } from "../resources/Data.js";
+import { GameData } from "../resources/Data.js";
 
 interface Marketplace {
     Offers: {
@@ -36,7 +36,7 @@ export async function MarketplaceEmbed(): Promise<InteractionReplyOptions & Inte
         Marketplace["Offers"],
         (Item) => {
             const OfferItemsString = Item["Items"].map((_Item) => {
-                const item = Items.filter((item) => { return item["ID"] === _Item["Item"]["Item"] })[0];
+                const item = GameData.Items.filter((item) => { return item["ID"] === _Item["Item"]["Item"] })[0];
                 return item["Emoji"];
             }).join(', ');
 
@@ -107,8 +107,8 @@ defineCommand({
             const Reply = Utils.BuildListEmbed<typeof UserOffers["Items"][0]>(
                 UserOffers["Items"],
                 (Item, Index) => {
-                    const OfferItem = Items.filter((OfferItem) => { return OfferItem["ID"] === Item["Item"]["Item"]; })[0];
-                    const BuyItem = Items.filter((BuyItem) => { return BuyItem["ID"] === Item["Cost"]["Item"]; })[0];
+                    const OfferItem = GameData.Items.filter((OfferItem) => { return OfferItem["ID"] === Item["Item"]["Item"]; })[0];
+                    const BuyItem = GameData.Items.filter((BuyItem) => { return BuyItem["ID"] === Item["Cost"]["Item"]; })[0];
 
                     const ItemCostString = {
                         Emoji: `${BuyItem["Emoji"]} ${BuyItem["Name"]} ×${Item["Cost"]["Quantity"]} → ${OfferItem["Emoji"]} ${OfferItem["Name"]} ×${Item["Item"]["Quantity"]}`,

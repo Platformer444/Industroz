@@ -5,7 +5,7 @@ import defineCommand from "../resources/Bot/commands.js";
 import { SettingsDatabase } from "./settings.js";
 import { World, WorldDatabase } from "./world.js";
 
-import { Items } from "../resources/Data.js";
+import { GameData } from "../resources/Data.js";
 import { Utils } from "../resources/Utilities.js";
 
 export async function InventoryList(interaction: BaseInteraction, Inventory: World["Inventory"]) {
@@ -14,7 +14,7 @@ export async function InventoryList(interaction: BaseInteraction, Inventory: Wor
     return Utils.BuildListEmbed<World["Inventory"][0]>(
         Inventory,
         (Item) => {
-            const item = Items.filter((item) => { return item["ID"] === Item["Item"] })[0];
+            const item = GameData.Items.filter((item) => { return item["ID"] === Item["Item"] })[0];
             return [
                 `${item["Emoji"]} ${Item["Quantity"] > 1 ? Utils.Plural(item["Name"]) : item["Name"]} ×${Item["Quantity"]}`,
                 {
@@ -25,7 +25,7 @@ export async function InventoryList(interaction: BaseInteraction, Inventory: Wor
             ];
         },
         async (interaction) => {
-            const Item = Items.filter((Item) => { return Item["Name"].replaceAll(' ', '_').toLowerCase() === Utils.Singular(interaction.values[0].split('(')[0]) })[0];
+            const Item = GameData.Items.filter((Item) => { return Item["Name"].replaceAll(' ', '_').toLowerCase() === Utils.Singular(interaction.values[0].split('(')[0]) })[0];
             return await interaction.update(await Utils.BuildInventoryItemEmbed(interaction.user.id, Item["ID"], parseInt(interaction.values[0].split('(')[1].replace('×', '').replace(')', ''))));
         },
         {
@@ -48,7 +48,7 @@ defineCommand({
 
                 if (World["Inventory"].length === 0) return [{ Name: 'Your Inventory is Empty!' }];
                 else return World["Inventory"].map((Item) => {
-                    const item = Items.filter((item) => { return item["ID"] === Item["Item"] })[0];
+                    const item = GameData.Items.filter((item) => { return item["ID"] === Item["Item"] })[0];
                     return { Name: `${Utils.Plural(item["Name"])} (×${Item["Quantity"]})`, Value: String(Item["Item"]) }
                 });
             }
@@ -71,7 +71,7 @@ defineCommand({
             else return await interaction.reply(await InventoryList(interaction, World["Inventory"]));
         }
         else {
-            const _Item = Items.filter((_Item) => { return _Item["ID"] === Item })[0];
+            const _Item = GameData.Items.filter((_Item) => { return _Item["ID"] === Item })[0];
 
             if (_Item === undefined) return await interaction.reply({
                 content: `The Specified Item ${Item} is Invalid!`,

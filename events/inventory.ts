@@ -4,7 +4,7 @@ import { defineModal, defineComponents } from "./../resources/Bot/components.js"
 import defineEvent from "./../resources/Bot/events.js";
 
 import { WorldDatabase } from "../commands/world.js";
-import { Items } from "./../resources/Data.js";
+import { GameData } from "./../resources/Data.js";
 import { InventoryList } from "../commands/inventory.js";
 import { Utils } from "./../resources/Utilities.js";
 
@@ -29,7 +29,7 @@ defineEvent({
             }
 
             else if (CustomID === "Buy") {
-                const Item = Items.filter((item) => { return item["ID"] === Data["Item"] })[0];
+                const Item = GameData.Items.filter((item) => { return item["ID"] === Data["Item"] })[0];
 
                 return await interaction.showModal(defineModal(
                     {
@@ -49,7 +49,7 @@ defineEvent({
             }
 
             else if (CustomID === "Sell") {
-                const Item = Items.filter((item) => { return item["ID"] === Data["Item"] })[0];
+                const Item = GameData.Items.filter((item) => { return item["ID"] === Data["Item"] })[0];
 
                 return await interaction.showModal(defineModal(
                     {
@@ -80,7 +80,7 @@ defineEvent({
             const CustomID = interaction.customId.split('$')[0];
             const Data = JSON.parse(interaction.customId.split('$')[1]);
 
-            const Item = Items.filter((Item) => { return Item["ID"] === parseInt(Data["Item"]) })[0];
+            const Item = GameData.Items.filter((Item) => { return Item["ID"] === parseInt(Data["Item"]) })[0];
 
             if (CustomID === "BuyModal") {
                 const World = await WorldDatabase.Get(interaction.user.id);
@@ -146,11 +146,11 @@ defineEvent({
                 const FilteredInvItem = World["Inventory"].filter((InvItem) => { return InvItem["Item"] === parseInt(Data["Item"]); })[0];
                 if (Quantity > FilteredInvItem["Quantity"]) Quantity = FilteredInvItem["Quantity"];
 
-                const Item = Items.filter((Item) => { return Item["ID"] === FilteredInvItem["Item"] })[0];
+                const Item = GameData.Items.filter((Item) => { return Item["ID"] === FilteredInvItem["Item"] })[0];
                 let Message = `**Inventory Change:**\n> ${Item["Emoji"]}${Item["Name"]} -${Quantity} (Sold)\n`;
 
                 Item["SellDetails"]?.forEach((Detail) => {
-                    const SellingItem = Items.filter((SellingItem) => { return SellingItem["ID"] === Detail["Item"] })[0];
+                    const SellingItem = GameData.Items.filter((SellingItem) => { return SellingItem["ID"] === Detail["Item"] })[0];
 
                     World["Inventory"] = Utils.EditInventory(World["Inventory"], Detail["Item"], "Add", Quantity * Detail["Quantity"]);
 

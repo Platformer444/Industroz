@@ -1,9 +1,9 @@
 import { AnySelectMenuInteraction, ButtonInteraction, InteractionReplyOptions, InteractionUpdateOptions, StringSelectMenuInteraction, User } from "discord.js"
 
 import { World } from "commands/world.js"
-import { Biome, Item, Tile } from "./Data.js"
-import { NavigationButtonData } from "./Utilities.js"
-import { SelectMenuOption } from "./Bot/components.js";
+import { Biome, Item, Tile } from "../resources/Data.js"
+import { NavigationButtonData } from "../resources/Utilities.js"
+import { SelectMenuOption } from "../resources/Bot/components.js";
 import { Settings } from "commands/settings.js";
 
 type InteractionResponse = InteractionReplyOptions & InteractionUpdateOptions;

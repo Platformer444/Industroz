@@ -6,7 +6,7 @@ import { WorldDatabase } from "./world.js";
 import { SettingsDatabase } from "./settings.js";
 
 import { Utils } from "../resources/Utilities.js";
-import { Item, Items } from "../resources/Data.js";
+import { GameData, Item } from "../resources/Data.js";
 
 defineCommand({
     Name: 'shop',
@@ -69,7 +69,7 @@ defineCommand({
             await WorldDatabase.Set(interaction.user.id, World);
         }
 
-        const BuyableItems = Items.filter((Item) => {
+        const BuyableItems = GameData.Items.filter((Item) => {
             return World["Islands"][Island - 1]["Shop"]["Items"]
                 .map((Item) => { return Item["Item"] })
                 .includes(Item["ID"]);
@@ -97,7 +97,7 @@ defineCommand({
                         await Utils.BuildShopItemEmbed(
                             interaction.user.id,
                             Island,
-                            Items.filter((Item) => { return Item["Name"].replaceAll(' ', '_').toLowerCase() === interaction.values[0] })[0]["ID"]
+                            GameData.Items.filter((Item) => { return Item["Name"].replaceAll(' ', '_').toLowerCase() === interaction.values[0] })[0]["ID"]
                         )
                     );
                 },

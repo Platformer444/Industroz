@@ -7,7 +7,7 @@ import { defineComponents, defineModal } from "./../resources/Bot/components.js"
 import { MarketplaceEmbed, MarketplaceDatabase } from "../commands/marketplace.js";
 import { SettingsDatabase } from "../commands/settings.js";
 import { World, WorldDatabase } from "../commands/world.js";
-import { Item, Items } from "./../resources/Data.js";
+import { GameData, Item } from "./../resources/Data.js";
 import { Utils } from "./../resources/Utilities.js";
 
 defineEvent(
@@ -81,11 +81,11 @@ defineEvent(
                         await MarketplaceDatabase.Set('Global', Marketplace);
 
                         const SellItem: { Item: Item, Quantity: number } = {
-                            Item: Items.filter((Item) => { return Item["ID"] === Data["Sell"][0]; })[0],
+                            Item: GameData.Items.filter((Item) => { return Item["ID"] === Data["Sell"][0]; })[0],
                             Quantity: Data["Sell"][1]
                         };
                         const GetItem: { Item: Item, Quantity: number } = {
-                            Item: Items.filter((Item) => { return Item["ID"] === Data["Get"][0]; })[0],
+                            Item: GameData.Items.filter((Item) => { return Item["ID"] === Data["Get"][0]; })[0],
                             Quantity: Data["Get"][1]
                         };
                         return await interaction.update({
@@ -100,7 +100,7 @@ defineEvent(
                         const World = await WorldDatabase.Get(interaction.user.id);
 
                         const FilteredItems = World["Inventory"].filter((InvItem) => {
-                            const Item = Items.filter((Item) => { return Item["ID"] === InvItem["Item"] })[0];
+                            const Item = GameData.Items.filter((Item) => { return Item["ID"] === InvItem["Item"] })[0];
                             return Item["SellDetails"];
                         });
                         await interaction.reply({
@@ -108,7 +108,7 @@ defineEvent(
                             components: Utils.BuildListEmbed<World["Inventory"][0]>(
                                 FilteredItems,
                                 (InvItem) => {
-                                    const Item = Items.filter((Item) => { return Item["ID"] === InvItem["Item"] })[0];
+                                    const Item = GameData.Items.filter((Item) => { return Item["ID"] === InvItem["Item"] })[0];
                                     return [
                                         '',
                                         { Label: Item["Name"], Emoji: Item["Emoji"], Description: Item["Description"], Value: JSON.stringify({ Item: Item["ID"], Quantity: InvItem["Quantity"] }) }
@@ -116,7 +116,7 @@ defineEvent(
                                 },
                                 async (interaction) => {
                                     const SellItem: { Item: Item, Quantity: number } = {
-                                        Item: Items.filter((Item) => { return Item["ID"] === JSON.parse(interaction.values[0])["Item"]; })[0],
+                                        Item: GameData.Items.filter((Item) => { return Item["ID"] === JSON.parse(interaction.values[0])["Item"]; })[0],
                                         Quantity: JSON.parse(interaction.values[0])["Quantity"]
                                     };
 
@@ -167,7 +167,7 @@ defineEvent({
                 });
 
                 const SellItem: { Item: Item, Quantity: number } = {
-                    Item: Items.filter((Item) => { return Item["ID"] === Data["Item"]; })[0],
+                    Item: GameData.Items.filter((Item) => { return Item["ID"] === Data["Item"]; })[0],
                     Quantity: Quantity > Data["Quantity"] ? Data["Quantity"] : Quantity
                 };
 
@@ -179,7 +179,7 @@ defineEvent({
                         > Quantity: ×${SellItem["Quantity"]}\n
                         **Item to Get: **`,
                     components: Utils.BuildListEmbed<Item>(
-                        Items.filter((Item) => { return Item["ID"] !== SellItem["Item"]["ID"] }),
+                        GameData.Items.filter((Item) => { return Item["ID"] !== SellItem["Item"]["ID"] }),
                         (Item) => {
                             return [
                                 '',
@@ -187,7 +187,7 @@ defineEvent({
                             ];
                         },
                         async (interaction) => {
-                            const GetItem = Items.filter((Item) => { return Item["ID"] === JSON.parse(interaction.values[0]); })[0];
+                            const GetItem = GameData.Items.filter((Item) => { return Item["ID"] === JSON.parse(interaction.values[0]); })[0];
 
                             await interaction.showModal(
                                 defineModal({
@@ -220,11 +220,11 @@ defineEvent({
                 });
 
                 const SellItem: { Item: Item, Quantity: number } = {
-                    Item: Items.filter((Item) => { return Item["ID"] === Data["Sell"]["Item"]; })[0],
+                    Item: GameData.Items.filter((Item) => { return Item["ID"] === Data["Sell"]["Item"]; })[0],
                     Quantity: Data["Sell"]["Quantity"]
                 };
                 const GetItem: { Item: Item, Quantity: number } = {
-                    Item: Items.filter((Item) => { return Item["ID"] === Data["Get"]; })[0],
+                    Item: GameData.Items.filter((Item) => { return Item["ID"] === Data["Get"]; })[0],
                     Quantity: Quantity
                 };
 

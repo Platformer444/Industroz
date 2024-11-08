@@ -4,7 +4,7 @@ import defineEvent from "./../resources/Bot/events.js";
 import { defineModal, defineComponents } from "./../resources/Bot/components.js";
 
 import { SettingsDatabase, SettingsList } from "../commands/settings.js";
-import { SETTINGS, Setting } from "./../resources/Data.js";
+import { GameData, Setting } from "./../resources/Data.js";
 
 defineEvent({
     Event: "interactionCreate",
@@ -54,7 +54,7 @@ defineEvent({
 
             if (CustomID === 'UpdateSettingChoice') {
                 const UserSettings = await SettingsDatabase.Get(interaction.user.id);
-                const Setting = SETTINGS.filter((Setting) => { return Setting["Name"] === Data["Setting"] })[0];
+                const Setting = GameData.Settings.filter((Setting) => { return Setting["Name"] === Data["Setting"] })[0];
 
                 UserSettings[Setting["Name"]] = (Setting["Choices"] as string[])[Number(interaction.values[0])];
 

@@ -1,10 +1,11 @@
 import { APIActionRowComponent, APIEmbed, APIMessageActionRowComponent, AnySelectMenuInteraction, ButtonInteraction, ComponentType, InteractionReplyOptions, InteractionUpdateOptions, StringSelectMenuInteraction, TextChannel, User, time } from "discord.js";
 import { stripIndent } from "common-tags";
 
-import { Biome, Biomes, Item, Items, SETTINGS, Tiles } from "./Data.js";
+import defineEvent from "./Bot/events.js";
+
+import { GameData, Item } from "./Data.js";
 import { World, WorldDatabase } from "../commands/world.js";
 import { defineComponents, Component, SelectMenuOption } from "./Bot/components.js";
-import defineEvent from "./Bot/events.js";
 import { Settings, SettingsDatabase } from "../commands/settings.js";
 import { MarketplaceDatabase } from "../commands/marketplace.js";
 
@@ -28,7 +29,7 @@ class Util {
             const __Biomes: number[] = [];
 
             for (let j = 1; j <= Width / BiomeWidth; j++) {
-                for (const Biome of Biomes) {
+                for (const Biome of GameData.Biomes) {
                     if (this.RandomNumber(1, this.RandomNumber(10, 20) - Biome["SpawningChance"]) === 1) {
                         __Biomes.push(Biome["ID"]);
                         break;
@@ -48,12 +49,12 @@ class Util {
             for (let j = 0; j < Width; j++) {
                 let Tile: number | undefined;
 
-                const Biome = Biomes.filter((Biome) => {
+                const Biome = GameData.Biomes.filter((Biome) => {
                     return Biome["ID"] === _Biomes[Math.floor(i / BiomeHeight)][Math.floor(j / BiomeWidth)];
                 })[0] ?? { Tiles: [ 2 ] };
 
                 for (let _Tile of Biome["Tiles"]) {
-                    const __Tile = Tiles.filter((__Tile) => { return __Tile["ID"] === _Tile })[0];
+                    const __Tile = GameData.Tiles.filter((__Tile) => { return __Tile["ID"] === _Tile })[0];
 
                     if (__Tile["Spawnable"]) {
                         if (this.RandomNumber(1, (10 - __Tile["Spawnable"])) === 1) {
@@ -82,8 +83,8 @@ class Util {
             for (let j = Position[1] - Math.floor(FOV[1] / 2); j < (Position[1] - Math.floor(FOV[1] / 2)) + FOV[1]; j++) {
                 let Tile;
 
-                if (!World[i][j]) Tile = Tiles.filter((Tile) => { return Tile["ID"] === 1 })[0];
-                else Tile = Tiles.filter((Tile) => { return Tile["ID"] === World[i][j]["Tile"] })[0];
+                if (!World[i][j]) Tile = GameData.Tiles.filter((Tile) => { return Tile["ID"] === 1 })[0];
+                else Tile = GameData.Tiles.filter((Tile) => { return Tile["ID"] === World[i][j]["Tile"] })[0];
 
                 message += Tile["Emoji"];
             }
@@ -111,7 +112,7 @@ class Util {
         const CurrentTile = World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]]["Tile"];
 
         if ((Tool === "Axe" ? AxeBreakableBlocks : PickaxeBreakableBlocks).includes(CurrentTile as number)) {
-            const Tile = Tiles.filter((Tile) => { return Tile["ID"] === CurrentTile })[0];
+            const Tile = GameData.Tiles.filter((Tile) => { return Tile["ID"] === CurrentTile })[0];
 
             World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]] = { Tile: Tile["DestroyReplace"] ?? 2 };
 
@@ -130,7 +131,7 @@ class Util {
         const World = await WorldDatabase.Get(Data["User"]);
                 
         const Tile = World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]];
-        const _Tile = Tiles.filter((_Tile) => { return _Tile["ID"] === Tile["Tile"] })[0];
+        const _Tile = GameData.Tiles.filter((_Tile) => { return _Tile["ID"] === Tile["Tile"] })[0];
 
         if (!Tile["Component"] || !_Tile["Salary"]) return {
             content: `You can't Pay Salary to this Tile!`,
@@ -172,7 +173,7 @@ class Util {
         const World = await WorldDatabase.Get(Data["User"]);
 
         const Tile = World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]];
-        const _Tile = Tiles.filter((_Tile) => { return _Tile["ID"] === Tile["Tile"] })[0];
+        const _Tile = GameData.Tiles.filter((_Tile) => { return _Tile["ID"] === Tile["Tile"] })[0];
 
         const [NewInventory, Message] = this.Pay(World["Inventory"], Utils.GetUpgradeCost(Tile["Tile"], (Tile["Component"]?.Level as number) + 1) ?? []);
         if (Message) return { content: Message, ephemeral: true };
@@ -327,7 +328,7 @@ class Util {
             ]
         ];
 
-        const UsableItems = Items.filter((Item) => { return Item["Usable"]; });
+        const UsableItems = GameData.Items.filter((Item) => { return Item["Usable"]; });
         return {
             content: this.RenderWorld(
                 World["Islands"][Data["Island"] - 1]["Tiles"],
@@ -339,7 +340,7 @@ class Util {
                         ComponentType: "Button",
                         CustomID: 'TileInfo',
                         Label: `[${String(Data["Position"])}]`,
-                        Emoji: Tiles.filter((Tile) => { return Tile["ID"] === World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]]["Tile"] })[0]["Emoji"],
+                        Emoji: GameData.Tiles.filter((Tile) => { return Tile["ID"] === World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]]["Tile"] })[0]["Emoji"],
                         ButtonStyle: "Primary",
                         Data: Data
                     },
@@ -497,7 +498,7 @@ class Util {
             return ShopItems.includes(Item)
         })[0];
 
-        const item = Items.filter((item) => { return item["ID"] === Item })[0];
+        const item = GameData.Items.filter((item) => { return item["ID"] === Item })[0];
 
         return {
             embeds: [
@@ -548,7 +549,7 @@ class Util {
         const World = await WorldDatabase.Get(UserID);
 
         const ShopItem = World["Islands"][Island - 1]["Shop"]["Items"].filter((ShopItem) => { return ShopItem["Item"] === Item })[0];
-        const item = Items.filter((item) => { return item["ID"] === Item })[0];
+        const item = GameData.Items.filter((item) => { return item["ID"] === Item })[0];
 
         return {
             embeds: [
@@ -586,7 +587,7 @@ class Util {
     async BuildTileInfoEmbed(Data: NavigationButtonData, Interactor: User): Promise<InteractionResponse> {
         const World = await WorldDatabase.Get(Data["User"]);
         const Tile = World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]];
-        const _Tile = Tiles.filter((tile) => { return tile["ID"] === Tile["Tile"] })[0];
+        const _Tile = GameData.Tiles.filter((tile) => { return tile["ID"] === Tile["Tile"] })[0];
 
         return {
             embeds: [
@@ -600,7 +601,7 @@ class Util {
 
                         { name: 'Production', value: _Tile["Production"] ? stripIndent`${
                             _Tile["Production"]?.map((Production) => {
-                                const Item = Items.filter((Item) => { return Item["ID"] === Production })[0];
+                                const Item = GameData.Items.filter((Item) => { return Item["ID"] === Production })[0];
                                 return `${Item["Emoji"]}×${(Tile["Component"]?.Workers as number) + (Tile["Component"]?.Level as number)}`
                             }).join(' ')
                         }/worker/min` : 'No Production' },
@@ -608,7 +609,7 @@ class Util {
                         { name: 'Upgrade Cost', value: String(this.DisplayItemCost(Tile["Tile"], "Tiles", "Upgrade", true, Tile["Component"]["Level"] + 1)), inline: true },
                         { name: 'Salary', value: stripIndent`${
                             _Tile["Salary"]?.map((SalaryItem) => {
-                                const Item = Items.filter((Item) => { return Item["ID"] === SalaryItem["Item"] })[0];
+                                const Item = GameData.Items.filter((Item) => { return Item["ID"] === SalaryItem["Item"] })[0];
                                 return `${Item["Emoji"]}×${SalaryItem["Quantity"]}`
                             }).join(' ')
                         }/worker/day`, inline: true }
@@ -640,7 +641,7 @@ class Util {
     }
 
     BuildSettingEmbed(Setting: keyof Settings, Value: string): InteractionResponse {
-        const _Setting = SETTINGS.filter((_Setting) => { return _Setting["Name"] === Setting })[0];
+        const _Setting = GameData.Settings.filter((_Setting) => { return _Setting["Name"] === Setting })[0];
 
         return {
             embeds: [
@@ -698,8 +699,8 @@ class Util {
         const Reply = this.BuildListEmbed<typeof UserOffers["Items"][0]>(
             UserOffers["Items"],
             (Item, Index) => {
-                const OfferItem = Items.filter((OfferItem) => { return OfferItem["ID"] === Item["Item"]["Item"]; })[0];
-                const BuyItem = Items.filter((BuyItem) => { return BuyItem["ID"] === Item["Cost"]["Item"]; })[0];
+                const OfferItem = GameData.Items.filter((OfferItem) => { return OfferItem["ID"] === Item["Item"]["Item"]; })[0];
+                const BuyItem = GameData.Items.filter((BuyItem) => { return BuyItem["ID"] === Item["Cost"]["Item"]; })[0];
 
                 return [
                     `${(Index as number) + 1}. ${BuyItem["Emoji"]} ×${Item["Cost"]["Quantity"]} → ${OfferItem["Emoji"]} ×${Item["Item"]["Quantity"]} (Ends at **${String(time(Math.floor(Item["OfferEndTime"] / 1000), "F"))}**)`,
@@ -741,8 +742,8 @@ class Util {
 
         const _Offer = UserOffer["Items"][Offer];
 
-        const OfferItem = Items.filter((OfferItem) => { return OfferItem["ID"] === _Offer["Item"]["Item"]; })[0];
-        const BuyItem = Items.filter((BuyItem) => { return BuyItem["ID"] === _Offer["Cost"]["Item"]; })[0];
+        const OfferItem = GameData.Items.filter((OfferItem) => { return OfferItem["ID"] === _Offer["Item"]["Item"]; })[0];
+        const BuyItem = GameData.Items.filter((BuyItem) => { return BuyItem["ID"] === _Offer["Cost"]["Item"]; })[0];
         return {
             embeds: [
                 {
@@ -805,12 +806,12 @@ class Util {
     }
 
     DisplayItemCost(ID: number, List: "Tiles" | "Items", Detail: "SellDetails" | "BuyingDetails" | "Upgrade", Emoji: boolean = false, UpgradeLevel?: number): string {
-        const Filtered = (List === "Tiles" ? Tiles : Items).filter((_ID) => { return _ID["ID"] === ID })[0];
+        const Filtered = (List === "Tiles" ? GameData.Tiles : GameData.Items).filter((_ID) => { return _ID["ID"] === ID })[0];
 
         return stripIndent`
             ${
                 (List === "Tiles" ? this.GetUpgradeCost(Filtered["ID"], UpgradeLevel ?? 1) : (Filtered as Item)[Detail === "Upgrade" ? "BuyingDetails" : Detail])?.map((Detail) => {
-                    const DetailItem = Items.filter((DetailItem) => { return DetailItem["ID"] === Detail["Item"]; })[0];
+                    const DetailItem = GameData.Items.filter((DetailItem) => { return DetailItem["ID"] === Detail["Item"]; })[0];
 
                     return `${Emoji ? DetailItem["Emoji"] : DetailItem["Name"]} ×${Detail["Quantity"]}`
                 }).join(' ')
@@ -819,7 +820,7 @@ class Util {
     }
 
     GetUpgradeCost(Buildable: number, Level: number): { Item: number, Quantity: number }[] | undefined {
-        return Tiles.filter((Tile) => { return Tile["ID"] === Buildable; })[0]
+        return GameData.Tiles.filter((Tile) => { return Tile["ID"] === Buildable; })[0]
             .BuyingDetails?.map((Detail) => {
                 return { Item: Detail["Item"], Quantity: Detail["Quantity"] * Math.pow(2, Level - 1) };
             });
@@ -833,7 +834,7 @@ class Util {
             const Temp = this.EditInventory(Inventory, Cost["Item"], "Remove", Cost["Quantity"]);
 
             if (Temp["length"] === 0) {
-                const Item = Items.filter((Item) => { return Item["ID"] === Cost["Item"] })[0];
+                const Item = GameData.Items.filter((Item) => { return Item["ID"] === Cost["Item"] })[0];
 
                 Done = false;
                 Message = `You don't have enough ${Item["Emoji"]} ${Item["Name"]} to Complete this Payment!`!;

@@ -1,15 +1,9 @@
-import { ButtonInteraction, StringSelectMenuInteraction } from "discord.js";
-
-import { client } from "../resources/Bot/client.js";
-import { defineComponents, SelectMenuOption } from "../resources/Bot/components.js";
+import { defineComponents } from "../resources/Bot/components.js";
 import defineCommand from "../resources/Bot/commands.js";
-import defineEvent from "../resources/Bot/events.js";
 
 import DataBase from "../databases/Database.js";
-import { SettingsDatabase } from "./settings.js";
 
 import { Utils } from "../resources/Utilities.js";
-import { Items, Tile, Tiles } from "../resources/Data.js";
 
 export interface World {
     Islands: {

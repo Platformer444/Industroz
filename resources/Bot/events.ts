@@ -27,10 +27,10 @@ export default function defineEvent(Event: Event) {
             if (Event["Event"] === "interactionCreate") {
                 const interaction = args[0] as (ButtonInteraction | AnySelectMenuInteraction);
 
-                if (!interaction.replied) if (interaction.type === 3) Run = await Utils.InteractionUserCheck(interaction);
+                if (!interaction.replied) if (interaction.type === 3) Run = await Utils.InteractionUserCheck(interaction);                
             }
 
-            if (Run) await Event.Execute(...args);
+            if (Run) await Event.Execute(...args, );
         });
     }
 }

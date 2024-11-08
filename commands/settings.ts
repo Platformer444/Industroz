@@ -4,7 +4,7 @@ import defineCommand from "../resources/Bot/commands.js";
 
 import DataBase from "../databases/Database.js";
 
-import { SETTINGS, Setting } from "../resources/Data.js";
+import { GameData, Setting } from "../resources/Data.js";
 import { Utils } from "../resources/Utilities.js";
 
 export interface Settings {
@@ -17,7 +17,7 @@ await SettingsDatabase.Init();
 
 export async function SettingsList(Settings: Settings): Promise<InteractionReplyOptions & InteractionUpdateOptions> {
     return Utils.BuildListEmbed<Setting>(
-        SETTINGS,
+        GameData.Settings,
         (Item) => {
             return [
                 `${Item["Emoji"]} ${Item["Name"]}: ${Settings[Item["Name"]]}`,
@@ -25,7 +25,7 @@ export async function SettingsList(Settings: Settings): Promise<InteractionReply
             ];
         },
         async (interaction) => {
-            const Setting = SETTINGS.filter((Setting) => { return Setting["Name"].replaceAll(' ', '_').toLowerCase() === interaction.values[0] })[0]
+            const Setting = GameData.Settings.filter((Setting) => { return Setting["Name"].replaceAll(' ', '_').toLowerCase() === interaction.values[0] })[0]
             await interaction.update(Utils.BuildSettingEmbed(Setting["Name"], Settings[Setting["Name"]]));
         },
         {
@@ -45,7 +45,7 @@ defineCommand({
             Description: 'The Setting You want to View',
             Autocomplete: async (interaction) => {
                 const Settings = await SettingsDatabase.Get(interaction.user.id);
-                return SETTINGS.map((Setting, Index) => { return { Name: `${Setting["Name"]}: ${Settings[Setting["Name"]]}`, Value: String(Index) } });
+                return GameData.Settings.map((Setting, Index) => { return { Name: `${Setting["Name"]}: ${Settings[Setting["Name"]]}`, Value: String(Index) } });
             },
         }
     ],
@@ -55,11 +55,11 @@ defineCommand({
 
         if (!Setting) return await interaction.reply(await SettingsList(UserSettings));
         else {
-            if (!SETTINGS[Setting]) return await interaction.reply({
+            if (!GameData.Settings[Setting]) return await interaction.reply({
                 content: `The Specified Setting ${Setting} is Invalid!`,
                 ephemeral: true
             });
-            else return await interaction.reply(Utils.BuildSettingEmbed(SETTINGS[Setting]["Name"], UserSettings[SETTINGS[Setting]["Name"]]));
+            else return await interaction.reply(Utils.BuildSettingEmbed(GameData.Settings[Setting]["Name"], UserSettings[GameData.Settings[Setting]["Name"]]));
         }
     }
 });
