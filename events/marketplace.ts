@@ -97,7 +97,17 @@ defineEvent(
                         });
                     }
                     else {
+                        const Marketplace = await MarketplaceDatabase.Get('Global')
                         const World = await WorldDatabase.Get(interaction.user.id);
+
+                        const OfferNum = (Marketplace["Offers"].filter((Offer) => { return Offer["User"] === interaction.user.id; })[0] ?? { Items: [] })["Items"]["length"]
+
+                        if (OfferNum >= World["MaxMarketplaceNum"]) {
+                            return await interaction.reply({
+                                content: `You can't Create New Marketplace Offers due to Inavailability of Space!`,
+                                ephemeral: true
+                            });
+                        }
 
                         const FilteredItems = World["Inventory"].filter((InvItem) => {
                             const Item = GameData.Items.filter((Item) => { return Item["ID"] === InvItem["Item"] })[0];

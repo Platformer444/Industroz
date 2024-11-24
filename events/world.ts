@@ -50,9 +50,11 @@ defineEvent({
                     Inventory: [
                         { Item: 1, Quantity: 1000 },
                         { Item: 2, Quantity: 10 },
-                        { Item: 3, Quantity: 10 }
+                        { Item: 3, Quantity: 10 },
+                        { Item: 4, Quantity: 100000 }
                     ],
                     LastOnlineTime: Date.now(),
+                    MaxMarketplaceNum: 0
                 });
 
                 await SettingsDatabase.Set(interaction.user.id, {
@@ -87,8 +89,6 @@ defineEvent({
                             const World = await WorldDatabase.Get(interaction.user.id);
                             const Buildable = GameData.Tiles.filter((Tile) => { return Tile["Name"].replaceAll(' ', '_').toLowerCase() === interaction.values[0] })[0];
 
-                            console.log(World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]]["Tile"]);
-        
                             if (Buildable["BuildableOn"]) {
                                 if (World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]]["Tile"] !== Buildable["BuildableOn"]) {
                                     const Tile = GameData.Tiles.filter((Tile) => { return Tile["ID"] === Buildable["BuildableOn"] })[0];
@@ -114,6 +114,7 @@ defineEvent({
                                 World["Islands"][Data["Island"] - 1]["Shop"]["RestockNum"] += 10;
                                 World["Islands"][Data["Island"] - 1]["Shop"]["LastRestockTime"] = Date.now();
                             }
+                            else if (Buildable["ID"] === 5) World["MaxMarketplaceNum"] += 10;
                             
                             World["Inventory"] = NewInventory;
                             World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]] = ![3].includes(Buildable["ID"]) ? { Tile: Buildable["ID"], Component: { Level: 1, Workers: 1, LastSalaryPay: Date.now(), Hoarding: [] } } : { Tile: Buildable["ID"] };
@@ -213,7 +214,7 @@ defineEvent({
            else if (CustomID === "GetOfflineEarnings") {
                 const World = await WorldDatabase.Get(interaction.user.id);
 
-                const Productions: Array<{ Buildable: number, Location: [number, number], Production: Array<{ Item: number, Amount: number } | "Hoarded"> }> = [];
+                const Productions: Array<{ Buildable: number, Location: [number, number], Production: Array<{ Item: number, Amount: number, Consumption?: { Item: number, Quantity: number } } | "Hoarded"> }> = [];
                 const SelectMenuOptions: SelectMenuOption[] = [];
 
                 const TimePassed = Math.floor((Date.now() - World["LastOnlineTime"]) / (1000 * 60));
@@ -225,12 +226,30 @@ defineEvent({
                         const _Tile = GameData.Tiles.filter((tile) => { return tile["ID"] === Tile["Tile"] })[0];
 
                         _Tile["Production"]?.forEach((Production) => {
+                            let Produce = 0;
+
                             const SalaryPaid = (Date.now() - (Tile["Component"]?.LastSalaryPay as number)) / (1000 * 60 * 60 * 24) < 1;
+
+                            let Consumption;
+                            if (Production["Consumption"]) {
+                                let Consume = (Production["Consumption"]["Quantity"] + ((Tile["Component"]?.Workers as number) - Utils.RandomNumber(1, (Tile["Component"]?.Workers as number) - Utils.RandomNumber(1, Tile["Component"]?.Level as number))) + (Tile["Component"]?.Level as number)) * TimePassed;
+                                const Quantity = (World["Inventory"].filter((InvItem) => { if (Production["Consumption"]) return Production["Consumption"]["Item"] === InvItem["Item"]; })[0] ?? { Quantity: 0 })["Quantity"];
+                                
+                                if (Consume > Quantity) Consume = Quantity;
+
+                                World["Inventory"] = Utils.EditInventory(World["Inventory"], Production["Consumption"]["Item"], "Remove", Consume);
+
+                                Produce = Consume / Production["Consumption"]["Quantity"];
+
+                                Consumption = { Item: Production["Consumption"]["Item"], Quantity: Consume };
+                            }
+                            else Produce = TimePassed * ((Tile["Component"]?.Workers as number) - Utils.RandomNumber(1, (Tile["Component"]?.Workers as number) - Utils.RandomNumber(1, Tile["Component"]?.Level as number))) + (Tile["Component"]?.Level as number)
+
                             World["Inventory"] = Utils.EditInventory(
                                 World["Inventory"],
-                                Production,
+                                Production["Item"],
                                 "Add",
-                                TimePassed * (Tile["Component"]?.Workers as number) + (Tile["Component"]?.Level as number)
+                                Produce
                             );
 
                             const ExistingProducer = Productions.filter((Producer) => {
@@ -240,19 +259,19 @@ defineEvent({
                             if (!ExistingProducer) Productions.push({
                                 Buildable: _Tile["ID"],
                                 Location: [Index1, _Tiles.indexOf(Tile)],
-                                Production: [SalaryPaid ? { Item: Production, Amount: TimePassed } : "Hoarded"]
+                                Production: [SalaryPaid ? { Item: Production["Item"], Amount: Produce, Consumption: Consumption } : "Hoarded"]
                             });
                             else Productions.splice(
                                 Productions.indexOf(ExistingProducer),
                                 1,
                                 {
                                     ...ExistingProducer,
-                                    Production: [...ExistingProducer["Production"], SalaryPaid ? { Item: Production, Amount: TimePassed } : "Hoarded"]
+                                    Production: [...ExistingProducer["Production"], SalaryPaid ? { Item: Production["Item"], Amount: Produce, Consumption: Consumption } : "Hoarded"]
                                 }
                             );
 
                             if (!SalaryPaid) {
-                                Tile["Component"]?.Hoarding.push({ Item: Production, Quantity: TimePassed });
+                                Tile["Component"]?.Hoarding.push({ Item: Production["Item"], Quantity: TimePassed });
                                 SelectMenuOptions.push({
                                     Label: _Tile["Name"],
                                     Value: `${Data["Island"]}$[${[Index1, _Tiles.indexOf(Tile)]}]$${_Tile["ID"]}`,
@@ -272,8 +291,12 @@ defineEvent({
                     let MessageLine = `${Buildable["Emoji"]} ([${Production["Location"]}]) →`;
 
                     if (Production["Production"][0] !== "Hoarded") Production["Production"].forEach((Produce) => {
-                        const Item = GameData.Items.filter((Item) => { return Item["ID"] === (Produce as { Item: number, Amount: number })["Item"] })[0];
-                        MessageLine += `${Item["Emoji"]} +${(Produce as { Item: number, Amount: number })["Amount"]}`;
+                        if (Produce && Produce !== "Hoarded") {
+                            const ProductionItem = GameData.Items.filter((Item) => { return Item["ID"] === Produce["Item"] })[0];
+                            const ConsumptionItem = GameData.Items.filter((Item) => { if (Produce["Consumption"]) return Item["ID"] === Produce["Consumption"]["Item"] })[0];
+
+                            MessageLine += `${ProductionItem["Emoji"]} +${Produce["Amount"]} ${Produce["Consumption"] ? `(${ConsumptionItem["Emoji"]} -${Produce["Consumption"]["Quantity"]})` : ''}`;
+                        }
                     });
                     else MessageLine += ` *Stocks Hoarded! Pay Salary to the Workers to Receive!*`;
 

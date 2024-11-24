@@ -17,7 +17,7 @@ export interface Tile {
     DestroyReplace?: number,
     DestroyGive?: ItemQuantityPair[],
     Salary?: ItemQuantityPair[],
-    Production?: number[]
+    Production?: { Item: number, Consumption?: ItemQuantityPair }[]
 };
 
 export interface Biome {
@@ -50,7 +50,7 @@ export const GameData: { Tiles: Tile[], Biomes: Biome[], Items: Item[], Settings
             ID: 2,
             Name: 'Land',
             Description: 'Just a Piece of 124×124 Pixels Big Piece of Just Grass... Just Grass... (Mooooo... Bahhhh.... Don\'t let Your Livestock come Here! I made a Mistake You See)',
-            Emoji: '<:Land1111:1170322862276608100>',
+            Emoji: '<:Land:1170322862276608100>',
             Spawnable: 10
         },
         {
@@ -65,12 +65,13 @@ export const GameData: { Tiles: Tile[], Biomes: Biome[], Items: Item[], Settings
             ID: 4,
             Name: 'Shop',
             Description: '',
-            Emoji: '<:Land1111:1170322862276608100>',
+            Emoji: '<:Shop:1306904457216262224>',
             Buildable: true,
             BuildableOn: 2,
             DestroyReplace: 2,
             BuyingDetails: [
-                { Item: 1, Quantity: 100 }
+                { Item: 1, Quantity: 100 },
+                { Item: 4, Quantity: 10 }
             ],
             Salary: [
                 { Item: 1, Quantity: 10 }
@@ -78,9 +79,25 @@ export const GameData: { Tiles: Tile[], Biomes: Biome[], Items: Item[], Settings
         },
         {
             ID: 5,
+            Name: 'Port',
+            Description: '',
+            Emoji: '<:Land:1170322862276608100>',
+            Buildable: true,
+            BuildableOn: 1,
+            DestroyReplace: 1,
+            BuyingDetails: [
+                { Item: 1, Quantity: 100 },
+                { Item: 4, Quantity: 10 }
+            ],
+            Salary: [
+                { Item: 1, Quantity: 10 }
+            ]
+        },
+        {
+            ID: 6,
             Name: 'Trees',
             Description: '',
-            Emoji: '<:Land1111Trees:1170322946213036052>',
+            Emoji: '<:Trees:1170322946213036052>',
             Spawnable: 9,
             DestroyReplace: 2,
             DestroyGive: [
@@ -88,12 +105,12 @@ export const GameData: { Tiles: Tile[], Biomes: Biome[], Items: Item[], Settings
             ]
         },
         {
-            ID: 6,
+            ID: 7,
             Name: 'WoodCutter Hut',
             Description: '',
-            Emoji: '<:Land1111WoodcutterHut:1170322950201815091>',
+            Emoji: '<:WoodcutterHut:1170322950201815091>',
             Buildable: true,
-            BuildableOn: 5,
+            BuildableOn: 6,
             BuyingDetails: [
                 { Item: 1, Quantity: 5 },
                 { Item: 4, Quantity: 5 }
@@ -105,23 +122,43 @@ export const GameData: { Tiles: Tile[], Biomes: Biome[], Items: Item[], Settings
             Salary: [
                 { Item: 1, Quantity: 5 }
             ],
-            Production: [ 4 ]
+            Production: [ { Item: 4 } ]
         },
         {
-            ID: 7,
+            ID: 8,
             Name: 'Stone',
             Description: '',
-            Emoji: '<:Land1111Stone:1170322935794372608>',
+            Emoji: '<:Stone:1170322935794372608>',
             Spawnable: 9,
             DestroyReplace: 2
         },
         {
-            ID: 8,
+            ID: 9,
             Name: 'Coal',
             Description: '',
-            Emoji: '<:Land1111Coal:1170322867473350686>',
+            Emoji: '<:Coal:1170322867473350686>',
             Spawnable: 7,
             DestroyReplace: 2
+        },
+        {
+            ID: 10,
+            Name: 'Plank Cutter',
+            Description: '',
+            Emoji: '<:PlankCutter:1306904454855000094>',
+            Buildable: true,
+            BuildableOn: 2,
+            BuyingDetails: [
+                { Item: 1, Quantity: 5 },
+                { Item: 4, Quantity: 5 }
+            ],
+            DestroyReplace: 2,
+            DestroyGive: [
+                { Item: 1,  Quantity: 2 }
+            ],
+            Salary: [
+                { Item: 1, Quantity: 5 }
+            ],
+            Production: [ { Item: 5, Consumption: { Item: 4, Quantity: 2 } } ]
         }
     ],
 
@@ -129,19 +166,19 @@ export const GameData: { Tiles: Tile[], Biomes: Biome[], Items: Item[], Settings
         {
             ID: 1,
             Name: 'Plains',
-            Tiles: [ 2, 5 ],
+            Tiles: [ 2 ],
             SpawningChance: 1
         },
         {
             ID: 2,
             Name: 'Forest',
-            Tiles: [ 1, 5 ],
+            Tiles: [ 1, 6 ],
             SpawningChance: 9
         },
         {
             ID: 3,
             Name: 'Stony Fields',
-            Tiles: [ 7, 8 ],
+            Tiles: [ 8, 9 ],
             SpawningChance: 8
         }
     ],
@@ -189,6 +226,12 @@ export const GameData: { Tiles: Tile[], Biomes: Biome[], Items: Item[], Settings
             Name: 'Wood',
             Description: 'A Long and Thick Piece of Material obtained by Destroying Trees.',
             Emoji: '🪵'
+        },
+        {
+            ID: 5,
+            Name: 'Wood Planks',
+            Description: '',
+            Emoji: '<:WoodenPlanks:1306904459929976892>'
         }
     ],
 

@@ -31,7 +31,8 @@ export interface World {
         Item: number,
         Quantity: number
     }[],
-    LastOnlineTime: number
+    LastOnlineTime: number,
+    MaxMarketplaceNum: number
 };
 
 export const WorldDatabase: DataBase<World> = new DataBase("World");

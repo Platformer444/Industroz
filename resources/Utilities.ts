@@ -184,6 +184,10 @@ class Util {
             Workers: Math.ceil(Tile["Component"]["Workers"] + Utils.RandomNumber(Math.pow(2, Tile["Component"]["Level"] - Utils.RandomNumber(1, 2)), Math.pow(2, Tile["Component"]["Level"])))
         };
         World["Inventory"] = NewInventory;
+
+        if (_Tile["ID"] === 4) World["Islands"][Data["Island"] - 1]["Shop"]["RestockNum"] += 10;
+        else if (_Tile["ID"] === 5) World["MaxMarketplaceNum"] += 10;
+
         await WorldDatabase.Set(Data["User"], World);
 
         return {
@@ -601,9 +605,11 @@ class Util {
 
                         { name: 'Production', value: _Tile["Production"] ? stripIndent`${
                             _Tile["Production"]?.map((Production) => {
-                                const Item = GameData.Items.filter((Item) => { return Item["ID"] === Production })[0];
-                                return `${Item["Emoji"]}×${(Tile["Component"]?.Workers as number) + (Tile["Component"]?.Level as number)}`
-                            }).join(' ')
+                                const ProductionItem = GameData.Items.filter((Item) => { return Item["ID"] === Production["Item"] })[0];
+                                const ConsumptionItem = GameData.Items.filter((Item) => { if (Production["Consumption"]) return Item["ID"] === Production["Consumption"]["Item"] })[0];
+
+                                return `${ProductionItem["Emoji"]}×${(Tile["Component"]?.Workers as number) + (Tile["Component"]?.Level as number)} ${Production["Consumption"] ? `(${ConsumptionItem["Emoji"]}-${Production["Consumption"]["Quantity"]})` : ''}`
+                            }).join(',\n')
                         }/worker/min` : 'No Production' },
 
                         { name: 'Upgrade Cost', value: String(this.DisplayItemCost(Tile["Tile"], "Tiles", "Upgrade", true, Tile["Component"]["Level"] + 1)), inline: true },
