@@ -1,4 +1,4 @@
-import { APIActionRowComponent, APIEmbed, APIMessageActionRowComponent, InteractionReplyOptions, InteractionUpdateOptions, time } from "discord.js";
+import { APIActionRowComponent, APIEmbed, APIMessageActionRowComponent, InteractionReplyOptions, InteractionUpdateOptions, time, User } from "discord.js";
 
 import defineCommand from "../resources/Bot/commands.js";
 import { defineComponents } from "../resources/Bot/components.js";
@@ -117,10 +117,40 @@ defineCommand({
                     const EndsAtString = `(Ends at **${String(time(Math.floor(Item["OfferEndTime"] / 1000), "F"))}**)`;
                     return [
                         `${(Index as number) + 1}. ${ItemCostString["Emoji"]} ${EndsAtString}`,
-                        { Label: ItemCostString["NoEmoji"], Description: `Ends at ${new Date(Item["OfferEndTime"]).toUTCString()}`, Emoji: OfferItem["Emoji"] }
+                        { Label: ItemCostString["NoEmoji"], Value: (Index as number).toString(), Description: `Ends at ${new Date(Item["OfferEndTime"]).toUTCString()}`, Emoji: OfferItem["Emoji"] }
                     ];
                 },
-                (interaction) => {},
+                async (interaction) => {
+                    const UserOffer = UserOffers.Items[parseInt(interaction.values[0])];
+
+                    const OfferItem = GameData.Items.filter((Item) => { return Item["ID"] === UserOffer["Item"]["Item"]; })[0];
+                    const BuyItem = GameData.Items.filter((Item) => { return Item["ID"] === UserOffer["Cost"]["Item"]; })[0];
+
+                    await interaction.reply({
+                        embeds: [
+                            {
+                                title: `Offer ${parseInt(interaction.values[0]) + 1}`,
+                                description: `Ends at **${String(time(Math.floor(UserOffer["OfferEndTime"] / 1000), "F"))}** (Your Timezone)`,
+                                fields: [
+                                    { name: 'You Give:', value: `${BuyItem["Emoji"]} ${BuyItem["Name"]} ×${UserOffer["Cost"]["Quantity"]}`, inline: true },
+                                    { name: 'Your Receive:', value: `${OfferItem["Emoji"]} ${OfferItem["Name"]} ×${UserOffer["Item"]["Quantity"]}`, inline: true }
+                                ]
+                            }
+                        ],
+                        components: [
+                            defineComponents(
+                                {
+                                    ComponentType: "Button",
+                                    CustomID: 'DeleteOffer',
+                                    Label: 'Delete Offer',
+                                    ButtonStyle: 'Danger',
+                                    Data: { Offer: parseInt(interaction.values[0]) }
+                                }
+                            )
+                        ],
+                        ephemeral: true
+                    })
+                },
                 { SelectMenu: UserOffers["Items"]["length"] !== 0, Title: Settings[interaction.user.id]["DisplayName"], Page: 1 }
             );
 

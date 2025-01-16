@@ -12,6 +12,7 @@ export interface World {
             Tile: number,
             Component?: {
                 Level: number,
+                Production: number[],
                 Workers: number,
                 LastSalaryPay: number,
                 Hoarding: { Item: number, Quantity: number }[]

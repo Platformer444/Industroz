@@ -30,9 +30,9 @@ defineEvent({
                     Islands: [
                         {
                             ID: 1,
-                            Tiles: Utils.CreateWorld(100, 100),
+                            Tiles: Utils.CreateWorld([10, 10]),
                             Outposts: [{
-                                Location: [49, 49],
+                                Location: [3, 3],
                                 Default: true
                             }],
                             Shop: {
@@ -82,12 +82,12 @@ defineEvent({
                             const CostString = Utils.DisplayItemCost(Item["ID"], "Tiles", "BuyingDetails");
                             return [
                                 '',
-                                { Label: Item["Name"], Description: CostString.includes('undefined') ? Item["Description"] : CostString, Emoji: Item["Emoji"] }
+                                { Label: Item["Name"], Value: `${Item["ID"]}`, Description: CostString.includes('undefined') ? Item["Description"] : CostString, Emoji: Item["Emoji"] }
                             ];
                         },
                         async (interaction, Data) => {
                             const World = await WorldDatabase.Get(interaction.user.id);
-                            const Buildable = GameData.Tiles.filter((Tile) => { return Tile["Name"].replaceAll(' ', '_').toLowerCase() === interaction.values[0] })[0];
+                            const Buildable = GameData.Tiles.filter((Tile) => { return Tile["ID"] === parseInt(interaction.values[0]) })[0];
 
                             if (Buildable["BuildableOn"]) {
                                 if (World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]]["Tile"] !== Buildable["BuildableOn"]) {
@@ -99,28 +99,49 @@ defineEvent({
                                 }
                             }
 
-                            const [NewInventory, Message] = Utils.Pay(World["Inventory"], Buildable["BuyingDetails"] ?? []);
-                            if (Message !== '') return await interaction.reply({
-                                content: Message,
-                                ephemeral: true
-                            });
+                            let Productions = GameData.Tiles.filter((Tile) => { return Tile["ID"] === Buildable["ID"] })[0]["Production"];
 
-                            if (Buildable["ID"] === 3) World["Islands"][Data["Island"] - 1]["Outposts"].push({
-                                Location: [Data["Position"][0], Data["Position"][1]],
-                                Default: false
-                            });
-                            else if (Buildable["ID"] === 4) {
-                                World["Islands"][Data["Island"] - 1]["Shop"]["Items"].forEach((Item) => { Item["Quantity"] += 10 });
-                                World["Islands"][Data["Island"] - 1]["Shop"]["RestockNum"] += 10;
-                                World["Islands"][Data["Island"] - 1]["Shop"]["LastRestockTime"] = Date.now();
-                            }
-                            else if (Buildable["ID"] === 5) World["MaxMarketplaceNum"] += 10;
-                            
-                            World["Inventory"] = NewInventory;
-                            World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]] = ![3].includes(Buildable["ID"]) ? { Tile: Buildable["ID"], Component: { Level: 1, Workers: 1, LastSalaryPay: Date.now(), Hoarding: [] } } : { Tile: Buildable["ID"] };
-                            await WorldDatabase.Set(interaction.user.id, World);
-    
-                            return await interaction.update(await Utils.BuildNavigation(Data, interaction.user));
+                            console.log(Productions);
+
+                            await interaction.update(
+                                Utils.BuildListEmbed<{Item: number, Consumption?: { Item: number, Quantity: number }}>(
+                                    Productions ?? [{ Item: 0 }],
+                                    (Production) => {
+                                        const ProductionItem = GameData.Items.filter((Item) => { return Item["ID"] === Production["Item"] })[0] ?? { Name: 'No Consumption', Description: `${Buildable["Name"]} has no productions! Select this to Continue!`, Emoji: '❌' };
+                                        const ConsumptionItem = Production["Consumption"] ? GameData.Items.filter((Item) => { return Item["ID"] === Production["Consumption"]?.Item })[0] : undefined;
+
+                                        return [
+                                            '',
+                                            { Label: ProductionItem["Name"], Values: `${Production["Item"]}`, Description: ConsumptionItem ? `${ConsumptionItem["Name"]} ×${Production["Consumption"]?.Quantity as number}` : ProductionItem["Description"], Emoji: ProductionItem["Emoji"] }
+                                        ]
+                                    },
+                                    async (interaction) => {
+                                        const [NewInventory, Message] = Utils.Pay(World["Inventory"], Buildable["BuyingDetails"] ?? []);
+                                        if (Message !== '') return await interaction.reply({
+                                            content: Message,
+                                            ephemeral: true
+                                        });
+
+                                        if (Buildable["ID"] === 3) World["Islands"][Data["Island"] - 1]["Outposts"].push({
+                                            Location: [Data["Position"][0], Data["Position"][1]],
+                                            Default: false
+                                        });
+                                        else if (Buildable["ID"] === 4) {
+                                            World["Islands"][Data["Island"] - 1]["Shop"]["Items"].forEach((Item) => { Item["Quantity"] += 10 });
+                                            World["Islands"][Data["Island"] - 1]["Shop"]["RestockNum"] += 10;
+                                            World["Islands"][Data["Island"] - 1]["Shop"]["LastRestockTime"] = Date.now();
+                                        }
+                                        else if (Buildable["ID"] === 5) World["MaxMarketplaceNum"] += 10;
+                                        
+                                        World["Inventory"] = NewInventory;
+                                        World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]] = ![3].includes(Buildable["ID"]) ? { Tile: Buildable["ID"], Component: { Level: 1, Production: interaction.values.map((Production) => { return parseInt(Production); }), Workers: 1, LastSalaryPay: Date.now(), Hoarding: [] } } : { Tile: Buildable["ID"] };
+                                        await WorldDatabase.Set(interaction.user.id, World);
+                
+                                        return await interaction.update(await Utils.BuildNavigation(Data, interaction.user));
+                                    },
+                                    { Embed: false, MultiSelectMenu: ((Productions?.length as number) > 25 ? 25 : Productions?.length), Title: 'Production', Page: 1 }
+                                )
+                            );
                         },
                         {
                             Embed: false,
@@ -225,7 +246,7 @@ defineEvent({
                     _Tiles.filter((Tile) => { return Tile["Component"]; }).forEach((Tile) => {
                         const _Tile = GameData.Tiles.filter((tile) => { return tile["ID"] === Tile["Tile"] })[0];
 
-                        _Tile["Production"]?.forEach((Production) => {
+                        _Tile["Production"]?.filter((Production) => { return Tile["Component"]?.Production.includes(Production["Item"]); }).forEach((Production) => {
                             let Produce = 0;
 
                             const SalaryPaid = (Date.now() - (Tile["Component"]?.LastSalaryPay as number)) / (1000 * 60 * 60 * 24) < 1;
@@ -371,7 +392,7 @@ defineEvent({
                         World["Islands"].push(
                             {
                                 ID: World["Islands"]["length"] + 1,
-                                Tiles: Utils.CreateWorld(100, 100),
+                                Tiles: Utils.CreateWorld([100, 100]),
                                 Outposts: [{
                                     Location: [49, 49],
                                     Default: true
@@ -397,7 +418,7 @@ defineEvent({
                 else return await interaction.update(await Utils.BuildHomeScreen(await client["users"].fetch(Data["User"]), interaction.user, parseInt(interaction.values[0].split('_')[1])));
             }
 
-            else if (CustomID === "OutpostSelect") return await interaction.update(await Utils.BuildHomeScreen(await client["users"].fetch(Data["User"]), Data["Island"], parseInt(interaction.values[0].split('_')[1])));
+            else if (CustomID === "OutpostSelect") return await interaction.update(await Utils.BuildHomeScreen(await client["users"].fetch(Data["User"]), Data["Island"], parseInt(interaction.values[0])));
         }
     }
 });

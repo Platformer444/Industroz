@@ -14,6 +14,7 @@ export interface Component {
     Emoji?: string,
 
     Options?: SelectMenuOption[],
+    ValuesNumber?: [number, number],
     ChannelTypes?: ChannelType[],
 
     TextStyle?: keyof typeof TextInputStyle,
@@ -75,6 +76,8 @@ function TransformAPI(Data: Component[], Into: "Button" | "SelectMenu" | "TextIn
                 type: ComponentType[Component["ComponentType"]],
                 custom_id: Component["CustomID"] + '$' + JSON.stringify(Component["Data"] ?? {}),
                 placeholder: Component["Placeholder"],
+                minValues: (Component["ValuesNumber"] ?? [1, 1])[0],
+                maxValues: (Component["ValuesNumber"] ?? [1, 1])[1],
                 options: Component["ComponentType"] === "StringSelect" ? 
                     Component["Options"]?.map((Option) => {
                         return {

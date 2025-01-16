@@ -1,4 +1,4 @@
-import { APIActionRowComponent, APIEmbed, APIMessageActionRowComponent, AnySelectMenuInteraction, ButtonInteraction, ComponentType, InteractionReplyOptions, InteractionUpdateOptions, StringSelectMenuInteraction, TextChannel, User, time } from "discord.js";
+import { APIActionRowComponent, APIEmbed, APIMessageActionRowComponent, AnySelectMenuInteraction, ButtonInteraction, ComponentType, InteractionReplyOptions, InteractionUpdateOptions, StringSelectMenuInteraction, TextChannel, User, time, underline } from "discord.js";
 import { stripIndent } from "common-tags";
 
 import defineEvent from "./Bot/events.js";
@@ -18,17 +18,17 @@ type InteractionResponse = InteractionReplyOptions & InteractionUpdateOptions;
 
 class Util {
     // World Utils
-    CreateWorld(Width: number, Height: number, DefaultOutpostPosition: [number, number] = [(Height / 2) - 1, (Width / 2) - 1]): World["Islands"][0]["Tiles"] {
+    CreateWorld(WorldDimensions: [number, number], DefaultOutpostPosition: [number, number] = [(WorldDimensions[0] / 2) - 1, (WorldDimensions[1] / 2) - 1]): World["Islands"][0]["Tiles"] {
         const World: World["Islands"][0]["Tiles"] = [];
 
         const _Biomes: number[][] = [];
         let BiomeWidth: number = 5;
         let BiomeHeight: number = 5;
 
-        for (let i = 1; i <= Height / BiomeHeight; i++) {
+        for (let i = 1; i <= WorldDimensions[0] / BiomeHeight; i++) {
             const __Biomes: number[] = [];
 
-            for (let j = 1; j <= Width / BiomeWidth; j++) {
+            for (let j = 1; j <= WorldDimensions[1] / BiomeWidth; j++) {
                 for (const Biome of GameData.Biomes) {
                     if (this.RandomNumber(1, this.RandomNumber(10, 20) - Biome["SpawningChance"]) === 1) {
                         __Biomes.push(Biome["ID"]);
@@ -37,16 +37,16 @@ class Util {
                 }
             }
 
-            if (__Biomes.length !== Width / BiomeWidth) {
-                __Biomes.push(...(new Array((Width / BiomeWidth) - __Biomes.length).fill(0)))
+            if (__Biomes.length !== WorldDimensions[1] / BiomeWidth) {
+                __Biomes.push(...(new Array((WorldDimensions[1] / BiomeWidth) - __Biomes.length).fill(0)))
             }
             _Biomes.push(__Biomes);
         }
 
-        for (let i = 0; i < Height; i++) {
+        for (let i = 0; i < WorldDimensions[0]; i++) {
             const WorldChunk: World["Islands"][0]["Tiles"][0] = [];
 
-            for (let j = 0; j < Width; j++) {
+            for (let j = 0; j < WorldDimensions[1]; j++) {
                 let Tile: number | undefined;
 
                 const Biome = GameData.Biomes.filter((Biome) => {
@@ -79,11 +79,13 @@ class Util {
     RenderWorld(World: World["Islands"][0]["Tiles"], Position: [number, number], FOV: [number, number] = [5, 5]): string {
         let message = '';
 
+        //if ((Position[0] - Math.floor(FOV[0] / 2)) < 0) Position[0] += Math.floor(FOV[0] / 2) -  1
+
         for (let i = Position[0] - Math.floor(FOV[0] / 2); i < (Position[0] - Math.floor(FOV[0] / 2)) + FOV[0]; i++) {
             for (let j = Position[1] - Math.floor(FOV[1] / 2); j < (Position[1] - Math.floor(FOV[1] / 2)) + FOV[1]; j++) {
                 let Tile;
 
-                if (!World[i][j]) Tile = GameData.Tiles.filter((Tile) => { return Tile["ID"] === 1 })[0];
+                if (!World[i] || !World[i][j]) Tile = GameData.Tiles.filter((Tile) => { return Tile["ID"] === 1 })[0];
                 else Tile = GameData.Tiles.filter((Tile) => { return Tile["ID"] === World[i][j]["Tile"] })[0];
 
                 message += Tile["Emoji"];
@@ -299,6 +301,7 @@ class Util {
                         Options: World["Islands"][Island - 1]["Outposts"].map((_Outpost, Index) => {
                             return {
                                 Label: `Outpost ${Index + 1}`,
+                                Value: (Index + 1).toString(),
                                 Default: Index + 1 === Outpost,
                                 Emoji: '🔭'
                             }
@@ -344,8 +347,9 @@ class Util {
                         ComponentType: "Button",
                         CustomID: 'TileInfo',
                         Label: `[${String(Data["Position"])}]`,
-                        Emoji: GameData.Tiles.filter((Tile) => { return Tile["ID"] === World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]]["Tile"] })[0]["Emoji"],
+                        //Emoji: GameData.Tiles.filter((Tile) => { return Tile["ID"] === World["Islands"][Data["Island"] - 1]["Tiles"][Data["Position"][0]][Data["Position"][1]]["Tile"] })[0]["Emoji"],
                         ButtonStyle: "Primary",
+                        Disabled: (Data["Position"][0] < 0 || Data["Position"][0] > (World["Islands"][Data["Island"] - 1]["Tiles"].length - 1)) || (Data["Position"][1] < 0 || Data["Position"][1] > (World["Islands"][Data["Island"] - 1]["Tiles"][0].length - 1)),
                         Data: Data
                     },
                     {
@@ -354,7 +358,7 @@ class Util {
                         Label: "Build",
                         Emoji: '🛠️',
                         ButtonStyle: "Primary",
-                        Disabled: Data["User"] !== Interactor["id"],
+                        Disabled: Data["User"] !== Interactor["id"] || ((Data["Position"][0] < 0 || Data["Position"][0] > (World["Islands"][Data["Island"] - 1]["Tiles"].length - 1))  || (Data["Position"][1] < 0 || Data["Position"][1] > (World["Islands"][Data["Island"] - 1]["Tiles"][0].length - 1))),
                         Data: Data
                     },
                     {
@@ -363,7 +367,7 @@ class Util {
                         Label: 'Use Item',
                         Emoji: UsableItems[this.RandomNumber(1, UsableItems["length"]) - 1]["Emoji"],
                         ButtonStyle: "Primary",
-                        Disabled: Data["User"] !== Interactor["id"],
+                        Disabled: Data["User"] !== Interactor["id"] || ((Data["Position"][0] < 0 || Data["Position"][0] > (World["Islands"][Data["Island"] - 1]["Tiles"].length - 1))  || (Data["Position"][1] < 0 || Data["Position"][1] > (World["Islands"][Data["Island"] - 1]["Tiles"][0].length - 1))),
                         Data: Data
                     }
                 ),
@@ -406,7 +410,8 @@ class Util {
             Page: number
             Title?: string,
             Embed?: boolean,
-            SelectMenu?: boolean,            
+            SelectMenu?: boolean,
+            MultiSelectMenu?: number,
             SelectMenuData?: any
         }
     ): InteractionResponse {
@@ -461,6 +466,7 @@ class Util {
                         ComponentType: "StringSelect",
                         CustomID: `${Options["Title"]}StringSelect`,
                         Placeholder: 'Select an Item...',
+                        ValuesNumber: [1, Options["MultiSelectMenu"] ?? 1],
                         Options: List
                             .filter((Item): ListItemType | undefined => {
                                 if (

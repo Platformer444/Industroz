@@ -154,6 +154,25 @@ defineEvent(
                         });
                     }
                 }
+
+                else if (CustomID === 'DeleteOffer') {
+                    const Marketplace = await MarketplaceDatabase.Get('Global');
+                    const UserOffers = Marketplace["Offers"].filter((Offer) => { return Offer["User"] === interaction.user.id })[0];
+
+                    if (!UserOffers) return await interaction.reply({
+                        content: `The Specified User doesn't have any Marketplace Offers!`,
+                        ephemeral: true
+                    });
+
+                    UserOffers["Items"].splice(Data["Offer"], 1);
+                    if (UserOffers["Items"].length === 0) Marketplace["Offers"].splice(Marketplace["Offers"].indexOf(UserOffers), 1);
+
+                    await MarketplaceDatabase.Set('Global', Marketplace);
+                    await interaction.reply({
+                        content: `Offer Number ${Data["Offer"]} was Deleted Successfully!`,
+                        ephemeral: true
+                    });
+                }
             }
         }
     }
