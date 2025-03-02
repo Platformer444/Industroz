@@ -4,23 +4,22 @@ import { stripIndent } from "common-tags";
 import defineEvent from "./../resources/Bot/events.js";
 import { defineComponents, defineModal } from "./../resources/Bot/components.js";
 
-import { MarketplaceEmbed, MarketplaceDatabase } from "../commands/marketplace.js";
+import { MarketplaceDatabase } from "../commands/marketplace.js";
 import { SettingsDatabase } from "../commands/settings.js";
 import { World, WorldDatabase } from "../commands/world.js";
-import { GameData, Item } from "./../resources/Data.js";
-import { Utils } from "./../resources/Utilities.js";
+import { Item } from "./../mods/Game.js";
 
 defineEvent(
     {
         Event: "interactionCreate",
         Name: 'Marketplace Button Interaction',
         
-        Execute: async (interaction: ButtonInteraction) => {
+        Execute: async (Utils, GameData, interaction: ButtonInteraction) => {
             if (interaction.isButton()) {
                 const CustomID = interaction.customId.split('$')[0];
                 const Data = JSON.parse(interaction.customId.split('$')[1]);
 
-                if (CustomID === 'Marketplace') await interaction.update(await MarketplaceEmbed());
+                if (CustomID === 'Marketplace') await interaction.update(await Utils.BuildMarketplaceEmbed());
                 else if (CustomID === 'MarketplaceUser') await interaction.update(await Utils.BuildMarketplaceUserEmbed(Data["User"]));
 
                 else if (CustomID === 'BuyOffer') {
@@ -182,7 +181,7 @@ defineEvent({
     Event: "interactionCreate",
     Name: 'Marketplace Modal Submit',
 
-    Execute: async (interaction: ModalMessageModalSubmitInteraction) => {
+    Execute: async (Utils, GameData, interaction: ModalMessageModalSubmitInteraction) => {
         if (interaction.isModalSubmit()) {
             const CustomID = interaction.customId.split('$')[0];
             const Data = JSON.parse(interaction.customId.split('$')[1]);

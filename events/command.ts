@@ -8,13 +8,13 @@ defineEvent({
     Event: "interactionCreate",
     Name: "Command Handling",
     
-    Execute: async (interaction: ChatInputCommandInteraction) => {
+    Execute: async (Utils, GameData, interaction: ChatInputCommandInteraction) => {
         if (interaction.isCommand()) await (Commands.filter((Command) => {
             return Command.Name === interaction.command?.name;
         })[0] ?? {
             Execute() {
                 console.error(`There is no Command as ${interaction.command?.name}`)
             }
-        }).Execute(interaction as ChatInputCommandInteraction);
+        }).Execute(interaction as ChatInputCommandInteraction, Utils, GameData);
     }
 });

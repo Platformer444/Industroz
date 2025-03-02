@@ -5,8 +5,7 @@ import defineCommand from "../resources/Bot/commands.js";
 import { WorldDatabase } from "./world.js";
 import { SettingsDatabase } from "./settings.js";
 
-import { Utils } from "../resources/Utilities.js";
-import { GameData, Item } from "../resources/Data.js";
+import { Item } from "../mods/Game.js";
 
 defineCommand({
     Name: 'shop',
@@ -27,7 +26,7 @@ defineCommand({
             }
         }
     ],
-    Execute: async (interaction) => {
+    Execute: async (interaction, Utils, GameData) => {
         const Island = parseInt(interaction.options.getString('island') ?? "");
         if (isNaN(Island)) return await interaction.reply({
             content: `The Specified Island ${Island} is Invalid!`,

@@ -1,12 +1,48 @@
-import { AnySelectMenuInteraction, ButtonInteraction, InteractionReplyOptions, InteractionUpdateOptions, StringSelectMenuInteraction, User } from "discord.js"
+import { BaseInteraction, InteractionReplyOptions, InteractionUpdateOptions, StringSelectMenuInteraction, User } from "discord.js"
 
 import { World } from "commands/world.js"
-import { Biome, Item, Tile } from "../resources/Data.js"
-import { NavigationButtonData } from "../resources/Utilities.js"
 import { SelectMenuOption } from "../resources/Bot/components.js";
-import { Settings } from "commands/settings.js";
+import { _Settings } from "commands/settings.js";
 
+interface NavigationButtonData {
+    User: string,
+    Island: number,
+    Position: [number, number]
+};
 type InteractionResponse = InteractionReplyOptions & InteractionUpdateOptions;
+type ItemQuantityPair = { Item: number, Quantity: number };
+
+export interface Tile {
+    ID: number,
+    Name: string,
+    Description: string,
+    Emoji: string,
+    Spawnable?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10,
+    Buildable?: boolean,
+    BuildableOn?: number,
+    BuyingDetails?: ItemQuantityPair[],
+    DestroyReplace?: number,
+    DestroyGive?: ItemQuantityPair[],
+    Salary?: ItemQuantityPair[],
+    Production?: { Item: number, Consumption?: ItemQuantityPair }[]
+};
+
+export interface Biome {
+    ID: number,
+    Name: string,
+    Tiles: number[],
+    SpawningChance: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10
+}
+
+export interface Item {
+    ID: number,
+    Name: string,
+    Description: string,
+    Emoji: string,
+    SellDetails?: ItemQuantityPair[],
+    BuyingDetails?: ItemQuantityPair[],
+    Usable?: (interaction: StringSelectMenuInteraction, Data: { User: string, Island: number, Position: [number, number] }) => Promise<void>
+};
 
 export default interface Game {
     Configuration: {
@@ -21,7 +57,7 @@ export default interface Game {
             Items: Item[],
         },
         Utilities: {
-            CreateWorld: (Width: number, Height: number, DefaultOutpostPosition?: [number, number]) => World["Islands"][0]["Tiles"],
+            CreateWorld: (WorldDimensions: [number, number], DefaultOutpostPosition?: [number, number]) => World["Islands"][0]["Tiles"],
             RenderWorld: (World: World["Islands"][0]["Tiles"], Position: [number, number], FOV?: [number, number]) => string,
             NavigateWorld: (Data: NavigationButtonData, Interactor: User, Move: [number, number]) => Promise<InteractionResponse>,
             DestroyTile: (Data: NavigationButtonData, Interactor: User, Tool: "Axe" | "Pickaxe") => Promise<["Reply" | "Update", InteractionResponse]>,
@@ -37,18 +73,23 @@ export default interface Game {
             BuildListEmbed: <ListItemType>(
                 List: ListItemType[],
                 Content: (Item: ListItemType, Index?: number, List?: ListItemType[]) => [string, SelectMenuOption],
-                SelectInteractionExecute: (interaction: StringSelectMenuInteraction) => any,
+                SelectInteractionExecute: (interaction: StringSelectMenuInteraction, Data?: any) => any | Promise<any>,
                 Options: {
                     Embed?: boolean,
                     SelectMenu?: boolean,            
                     Title?: string,
-                    Page: number
+                    Page: number,
+                    MultiSelectMenu?: number,
+                    SelectMenuData?: any
                 }
             ) => InteractionResponse,
+            BuildInventoryEmbed: (interaction: BaseInteraction, Inventory: World["Inventory"]) => Promise<InteractionResponse>,
             BuildInventoryItemEmbed: (UserID: string, Item: number, Quantity: number) => Promise<InteractionResponse>,
             BuildShopItemEmbed: (UserID: string, Island: number, Item: number) => Promise<InteractionResponse>,
             BuildTileInfoEmbed: (Data: NavigationButtonData, Interactor: User) => Promise<InteractionResponse>,
-            BuildSettingEmbed: (Setting: keyof Settings, Value: string) => InteractionResponse,
+            BuildSettingsEmbed: (Settings: _Settings) => Promise<InteractionResponse>,
+            BuildSettingEmbed: (Setting: keyof _Settings, Value: string) => InteractionResponse,
+            BuildMarketplaceEmbed: () => Promise<InteractionResponse>,
             BuildMarketplaceUserEmbed: (User: string) => Promise<InteractionResponse>,
             BuildMarketplaceOfferEmbed: (User: string, Interactor: string, Offer: number) => Promise<InteractionResponse>,
 
@@ -56,7 +97,6 @@ export default interface Game {
             DisplayItemCost: (ID: number, List: "Tiles" | "Items", Detail: "SellDetails" | "BuyingDetails" | "Upgrade", Emoji?: boolean, UpgradeLevel?: number) => string,
             GetUpgradeCost: (Buildable: number, Level: number) => { Item: number, Quantity: number }[] | undefined,
             Pay: (Inventory: World["Inventory"], Items: { Item: number, Quantity: number }[]) => [World["Inventory"], string],
-            InteractionUserCheck: (Interaction: ButtonInteraction | AnySelectMenuInteraction) => Promise<boolean>,
         }
     }
 };

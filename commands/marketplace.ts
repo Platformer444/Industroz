@@ -6,10 +6,7 @@ import { defineComponents } from "../resources/Bot/components.js";
 import DataBase from "../databases/Database.js";
 import { SettingsDatabase } from "./settings.js";
 
-import { Utils } from "../resources/Utilities.js";
-import { GameData } from "../resources/Data.js";
-
-interface Marketplace {
+export interface Marketplace {
     Offers: {
         User: string,
         Items: {
@@ -22,41 +19,6 @@ interface Marketplace {
 
 export const MarketplaceDatabase: DataBase<Marketplace> = new DataBase('Marketplace');
 await MarketplaceDatabase.Init();
-
-export async function MarketplaceEmbed(): Promise<InteractionReplyOptions & InteractionUpdateOptions> {
-    const Marketplace = await MarketplaceDatabase.Get('Global');
-    const Settings = await SettingsDatabase.GetAll();
-
-    if (Marketplace["Offers"].length === 0) return {
-        content: `There are no Offers Available in the Marketplace Currently!`,
-        ephemeral: true
-    };
-
-    return Utils.BuildListEmbed<Marketplace["Offers"][0]>(
-        Marketplace["Offers"],
-        (Item) => {
-            const OfferItemsString = Item["Items"].map((_Item) => {
-                const item = GameData.Items.filter((item) => { return item["ID"] === _Item["Item"]["Item"] })[0];
-                return item["Emoji"];
-            }).join(', ');
-
-            return [
-                `**${Settings[Item["User"]]["DisplayName"]}**: ${Item["Items"].length} ${Item["Items"].length > 1 ? 'Offers' : 'Offer'} Available (${OfferItemsString})`,
-                {
-                    Label: Settings[Item["User"]]["DisplayName"],
-                    Description: `${Item["Items"].length} ${
-                        Item["Items"].length > 1 ? 'Offers' : 'Offer'
-                    } Available`,
-                    Value: Item["User"]
-                }
-            ];
-        },
-        async (interaction) => {
-            await interaction.update(await Utils.BuildMarketplaceUserEmbed(interaction.values[0]));
-        },
-        { Title: 'Marketplace', Page: 1 }
-    );
-}
 
 defineCommand({
     Name: 'marketplace',
@@ -78,7 +40,7 @@ defineCommand({
             Description: 'Manage Your Marketplace Offers',
         }
     ],
-    Execute: async (interaction) => {
+    Execute: async (interaction, Utils, GameData) => {
         if (interaction.options.getSubcommand(true) === 'view') {
             const User = interaction.options.getUser('user');
 
@@ -94,7 +56,7 @@ defineCommand({
 
             await MarketplaceDatabase.Set('Global', Marketplace);
 
-            if (User === null) return await interaction.reply(await MarketplaceEmbed());
+            if (User === null) return await interaction.reply(await Utils.BuildMarketplaceEmbed());
             else return await interaction.reply(await Utils.BuildMarketplaceUserEmbed(User.id));
         }
         else if (interaction.options.getSubcommand(true) === 'manage') {

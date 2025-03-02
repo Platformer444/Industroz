@@ -5,7 +5,6 @@ import chalk from "chalk"
 
 import { Client, ClientOptions } from "discord.js";
 import { Commands, TransformAPI } from "./commands.js";
-import { Events } from "./events.js";
 
 export let client: Client = undefined as any;
 

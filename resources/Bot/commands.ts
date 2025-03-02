@@ -1,5 +1,6 @@
 import { ApplicationCommandOptionType, AutocompleteInteraction, ChatInputCommandInteraction } from "discord.js"
 import chalk from "chalk";
+import Game from "mods/Game";
 
 interface Command {
     Name: string,
@@ -8,7 +9,9 @@ interface Command {
     SubCommands?: SubCommand[]
     Options?: CommandOption[],
     Execute: (
-        interaction: ChatInputCommandInteraction
+        interaction: ChatInputCommandInteraction,
+        Utils: Game["Resources"]["Utilities"],
+        GameData: Game["Resources"]["Data"]
     ) => Promise<any>
 };
 
@@ -30,7 +33,9 @@ interface CommandOption {
     Description: string,
     Required?: boolean,
     Autocomplete?: (
-        interaction: AutocompleteInteraction
+        interaction: AutocompleteInteraction,
+        Utils: Game["Resources"]["Utilities"],
+        GameData: Game["Resources"]["Data"]
     ) => Promise<{ Name: string, Value?: string }[]>,
     Choices?: string[]
 };

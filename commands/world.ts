@@ -3,8 +3,6 @@ import defineCommand from "../resources/Bot/commands.js";
 
 import DataBase from "../databases/Database.js";
 
-import { Utils } from "../resources/Utilities.js";
-
 export interface World {
     Islands: {
         ID: number,
@@ -84,7 +82,7 @@ defineCommand({
             ]
         }
     ],
-    Execute: async (interaction) => {
+    Execute: async (interaction, Utils, GameData) => {
         switch (interaction.options.getSubcommand(true)) {
             case 'create':
                 return await interaction.reply({

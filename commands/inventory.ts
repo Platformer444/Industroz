@@ -1,39 +1,6 @@
-import { BaseInteraction } from "discord.js";
-
 import defineCommand from "../resources/Bot/commands.js";
 
-import { SettingsDatabase } from "./settings.js";
-import { World, WorldDatabase } from "./world.js";
-
-import { GameData } from "../resources/Data.js";
-import { Utils } from "../resources/Utilities.js";
-
-export async function InventoryList(interaction: BaseInteraction, Inventory: World["Inventory"]) {
-    const Settings = await SettingsDatabase.Get(interaction.user.id);
-
-    return Utils.BuildListEmbed<World["Inventory"][0]>(
-        Inventory,
-        (Item) => {
-            const item = GameData.Items.filter((item) => { return item["ID"] === Item["Item"] })[0];
-            return [
-                `${item["Emoji"]} ${Item["Quantity"] > 1 ? Utils.Plural(item["Name"]) : item["Name"]} ×${Item["Quantity"]}`,
-                {
-                    Label: `${Item["Quantity"] > 1 ? Utils.Plural(item["Name"]) : item["Name"]}(×${Item["Quantity"]})`,
-                    Description: item["Description"],
-                    Emoji: item["Emoji"]
-                }
-            ];
-        },
-        async (interaction) => {
-            const Item = GameData.Items.filter((Item) => { return Item["Name"].replaceAll(' ', '_').toLowerCase() === Utils.Singular(interaction.values[0].split('(')[0]) })[0];
-            return await interaction.update(await Utils.BuildInventoryItemEmbed(interaction.user.id, Item["ID"], parseInt(interaction.values[0].split('(')[1].replace('×', '').replace(')', ''))));
-        },
-        {
-            Title: `${Settings["DisplayName"]}'s Inventory`,
-            Page: 1
-        }
-    )
-}
+import { WorldDatabase } from "./world.js";
 
 defineCommand({
     Name: 'inventory',
@@ -43,7 +10,7 @@ defineCommand({
             Type: "String",
             Name: 'item',
             Description: 'The Item You Want to View',
-            Autocomplete: async (interaction) => {
+            Autocomplete: async (interaction, Utils, GameData) => {
                 const World = await WorldDatabase.Get(interaction.user.id);
 
                 if (World["Inventory"].length === 0) return [{ Name: 'Your Inventory is Empty!' }];
@@ -54,7 +21,7 @@ defineCommand({
             }
         }
     ],
-    Execute: async (interaction) => {
+    Execute: async (interaction, Utils, GameData) => {
         let Item = parseInt(interaction["options"].getString('item') ?? '');
         const World = await WorldDatabase.Get(interaction.user.id);
 
@@ -68,7 +35,7 @@ defineCommand({
                 content:`Your Inventory is Empty!`,
                 ephemeral: true
             });
-            else return await interaction.reply(await InventoryList(interaction, World["Inventory"]));
+            else return await interaction.reply(await Utils.BuildInventoryEmbed(interaction, World["Inventory"]));
         }
         else {
             const _Item = GameData.Items.filter((_Item) => { return _Item["ID"] === Item })[0];

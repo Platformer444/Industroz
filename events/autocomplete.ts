@@ -8,7 +8,7 @@ defineEvent({
     Event: "interactionCreate",
     Name: "AutoComplete Handling",
     
-    Execute: async (interaction: AutocompleteInteraction) => {
+    Execute: async (Utils, GameData, interaction: AutocompleteInteraction) => {
         if (interaction.isAutocomplete()) {
             const FilteredCommand = Commands.filter((Command) => { return Command.Name === interaction.command?.name })[0]
             if (!FilteredCommand) return console.error(`No Command matching the Name ${interaction.command?.name}`);
@@ -26,7 +26,7 @@ defineEvent({
             if (!FilteredOption) return console.error(`No Option matching the Name ${interaction.options.getFocused(true)["name"]}`);
 
             if (FilteredOption?.Autocomplete instanceof Function) {
-                const Choices = await FilteredOption.Autocomplete(interaction)
+                const Choices = await FilteredOption.Autocomplete(interaction, Utils, GameData)
                 interaction.respond(
                     Choices.map((Choice) => {
                         return { name: Choice["Name"], value: Choice["Value"] ?? Choice["Name"] };

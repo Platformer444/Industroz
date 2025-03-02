@@ -9,7 +9,7 @@ defineEvent({
     Event: "error",
     Name: 'Error Handling',
     
-    Execute: async (Error: Error) => {
+    Execute: async (Utils, GameData, Error: Error) => {
         const DevServer = await client.guilds.fetch(process.env.DEV_SERVER ?? "");
         
         if (!DevServer) {

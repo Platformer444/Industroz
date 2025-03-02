@@ -4,15 +4,12 @@ import { defineModal, defineComponents } from "./../resources/Bot/components.js"
 import defineEvent from "./../resources/Bot/events.js";
 
 import { WorldDatabase } from "../commands/world.js";
-import { GameData } from "./../resources/Data.js";
-import { InventoryList } from "../commands/inventory.js";
-import { Utils } from "./../resources/Utilities.js";
 
 defineEvent({
     Event: "interactionCreate",
     Name: 'Inventory Button Interaction',
     
-    Execute: async (interaction: ButtonInteraction) => {
+    Execute: async (Utils, GameData, interaction: ButtonInteraction) => {
         if (interaction.isButton()) {
             const CustomID = interaction.customId.split('$')[0];
             const Data = JSON.parse(interaction.customId.split('$')[1]);
@@ -25,7 +22,7 @@ defineEvent({
                     ephemeral: true
                 });
 
-                return await interaction.update(await InventoryList(interaction, World["Inventory"]));
+                return await interaction.update(await Utils.BuildInventoryEmbed(interaction, World["Inventory"]));
             }
 
             else if (CustomID === "Buy") {
@@ -75,7 +72,7 @@ defineEvent({
     Event: "interactionCreate",
     Name: 'Inventory Modal Submit',
     
-    Execute: async (interaction: ModalSubmitInteraction) => {
+    Execute: async (Utils, GameData, interaction: ModalSubmitInteraction) => {
         if (interaction.isModalSubmit()) {
             const CustomID = interaction.customId.split('$')[0];
             const Data = JSON.parse(interaction.customId.split('$')[1]);

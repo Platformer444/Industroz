@@ -6,14 +6,13 @@ import defineEvent from "./../resources/Bot/events.js";
 
 import { SettingsDatabase } from "../commands/settings.js";
 import { WorldDatabase, World } from "../commands/world.js";
-import { GameData, Tile } from "./../resources/Data.js";
-import { Utils } from "./../resources/Utilities.js";
+import { Tile } from "./../mods/Game.js";
 
 defineEvent({
     Event: "interactionCreate",
     Name: "World Button Interactions",
     
-    Execute: async (interaction: ButtonInteraction) => {
+    Execute: async (Utils, GameData, interaction: ButtonInteraction) => {
         if (interaction.isButton()) {
             const CustomID = interaction.customId.split('$')[0];
             const Data = JSON.parse(interaction.customId.split('$')[1]);
@@ -371,7 +370,7 @@ defineEvent({
     Event: "interactionCreate",
     Name: 'World StringSelectMenu Interaction',
     
-    Execute: async (interaction: StringSelectMenuInteraction) => {
+    Execute: async (Utils, GameData, interaction: StringSelectMenuInteraction) => {
         if (interaction.isStringSelectMenu()) {
             const CustomID = interaction.customId.split('$')[0];
             const Data = JSON.parse(interaction.customId.split('$')[1]);

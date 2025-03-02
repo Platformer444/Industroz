@@ -1,16 +1,48 @@
-import { AnySelectMenuInteraction, ButtonInteraction, ClientEvents, Interaction } from "discord.js"
+import { AnySelectMenuInteraction, ButtonInteraction, ClientEvents, ComponentType, InteractionReplyOptions, InteractionUpdateOptions, TextChannel } from "discord.js"
 import chalk from "chalk";
 
 import { client } from "./client.js";
-import { Utils } from "./../Utilities.js";
+import Game from "mods/Game.js";
+import Vanilla from "mods/Vanilla.js";
 
 interface Event {
     Name: string,
     Event: keyof ClientEvents,
-    Execute: Function
+    Execute: (Utils: Game["Resources"]["Utilities"], GameData: Game["Resources"]["Data"], ...args: any[]) => (Promise<any> | any)
 };
 
 export const Events: Event[] = [];
+
+async function InteractionUserCheck(Interaction: ButtonInteraction | AnySelectMenuInteraction): Promise<boolean> {
+    const Message = Interaction.message;
+    const Reference = Interaction.message.reference;
+
+    const UnusableResponse: InteractionReplyOptions & InteractionUpdateOptions = {
+        content: `The ${ComponentType[Interaction.componentType]} can't be Used by You!`,
+        ephemeral: true
+    };
+    if (Interaction.isButton() || Interaction.isAnySelectMenu()) {
+        if (Reference === null) {
+            if (Interaction.user.id !== (Message.interaction?.user.id as string)) {
+                await Interaction.reply(UnusableResponse);
+                return false;
+            }
+            else return true;
+        }
+        else {
+            const Guild = await Interaction.client.guilds.fetch(Reference?.guildId as string);
+            const Channel = (await Guild.channels.fetch(Reference?.channelId as string)) as TextChannel;
+            const RepliedMessage = await Channel.messages.fetch(Reference?.messageId as string);
+
+            if (RepliedMessage.interaction?.user.id === Interaction.user.id) return true;
+            else {
+                await Interaction.reply(UnusableResponse);
+                return false;
+            }
+        }
+    }
+    else return true;
+}
 
 export default function defineEvent(Event: Event) {
     const ExistingEvent = Events.filter((_Event) => {
@@ -27,10 +59,10 @@ export default function defineEvent(Event: Event) {
             if (Event["Event"] === "interactionCreate") {
                 const interaction = args[0] as (ButtonInteraction | AnySelectMenuInteraction);
 
-                if (!interaction.replied) if (interaction.type === 3) Run = await Utils.InteractionUserCheck(interaction);                
+                if (!interaction.replied) if (interaction.type === 3) Run = await InteractionUserCheck(interaction);                
             }
 
-            if (Run) await Event.Execute(...args, );
+            if (Run) await Event.Execute(Vanilla.Resources.Utilities, Vanilla.Resources.Data, ...args);
         });
     }
 }
